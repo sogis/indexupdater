@@ -1,3 +1,9 @@
+# Do not add any files from folders bin, build, tmp, gradle
+**/bin
+**/build
+**/tmp
+**/gradle
+
 # Compiled class file
 *.class
 
