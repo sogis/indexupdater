@@ -2,7 +2,7 @@ CREATE OR REPLACE VIEW public.solr_index_fill_0_10k_v AS
 WITH 
 base AS (
     SELECT 
-        'fill_0_10k'::text AS subclass,
+        'ch.so.agi.fill_0_10k'::text AS subclass,
         generate_series.generate_series::text AS id_in_class,
         'fill lorem ipsum solr rocks:'::text || generate_series.generate_series::text AS displaytext,
         (((random()::text || ' | '::text) || generate_series.generate_series) || ' | '::text) || random()::text AS part_1
@@ -26,7 +26,7 @@ CREATE OR REPLACE VIEW public.solr_index_fill_10k_60k_v AS
 WITH 
 base AS (
     SELECT 
-        'fill_10k_60k'::text AS subclass,
+        'ch.so.agi.fill_10k_60k'::text AS subclass,
         generate_series.generate_series::text AS id_in_class,
         'fill lorem ipsum solr rocks:'::text || generate_series.generate_series::text AS displaytext,
         (((random()::text || ' | '::text) || generate_series.generate_series) || ' | '::text) || random()::text AS part_1

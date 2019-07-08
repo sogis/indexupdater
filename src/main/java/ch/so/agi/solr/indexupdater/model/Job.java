@@ -28,7 +28,7 @@ public class Job {
 
 	public String getDataSetIdentifier() {
 		return dataSetIdentifier;
-	}
+	}	
 
 	@Override
 	public String toString() {
