@@ -16,8 +16,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class DihResponse {
 	
 	private static Set<String>  STATUS_SET;
-	private static final String STATUS_IDLE = "idle";
-	private static final String STATUS_BUSY = "busy";
+	public static final String STATUS_IDLE = "idle";
+	public static final String STATUS_BUSY = "busy";
 
 	private String status;
 	private int docs_processed;	
@@ -59,4 +59,18 @@ public class DihResponse {
 		return docs_skipped;
 	}
 
+	@Override
+    public String toString() { 
+		String objectString = super.toString();
+
+        String repr = MessageFormat.format(
+        		"{0} [ status: {1}, processed: {2}. Objectinfo: {3}",
+        		DihResponse.class.getName(),
+        		status,
+        		docs_processed,
+        		objectString
+        		);
+        
+        return repr;
+    } 
 }

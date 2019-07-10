@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import ch.so.agi.solr.indexupdater.model.Job;
 import ch.so.agi.solr.indexupdater.model.QueueOfJobs;
+import ch.so.agi.solr.indexupdater.util.IndexSliceUpdater;
 
 @Component
 public class QueuePoller {
@@ -28,7 +29,7 @@ public class QueuePoller {
     	
     	if(newJob == null) {
     		if(needToEmitLiveSign())
-    			logInfo("QueueOfJobs gave me nothing to work on, going back to sleep");
+    			logInfo("Job queue ist empty, going back to sleep");
     		
     		return;
     	}
@@ -43,7 +44,7 @@ public class QueuePoller {
     
     private static void complementDefaults(Job job) {
     	if(job.getDihPath() == null)
-    		job.setDihPath("solr/gdi/dataimport/dih");
+    		job.setDihPath("solr/gdi/dih");
     	
     	if(job.getMaxWorkDurationMinutes() == null)
     		job.setMaxWorkDurationMinutes(30);

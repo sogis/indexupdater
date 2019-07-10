@@ -1,26 +1,22 @@
-package ch.so.agi.solr.indexupdater;
+package ch.so.agi.solr.indexupdater.util;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ch.so.agi.solr.indexupdater.model.Job;
-import ch.so.agi.solr.indexupdater.util.Util;
 
 /*
  * Handles the complete update of one entity / facet of a
@@ -34,23 +30,34 @@ import ch.so.agi.solr.indexupdater.util.Util;
  * which must be different after each manipulation of the
  * index.
  * 
- * http://localhost:8983/solr/gdi/dih?command=status
+ * Integration Tests:
+ * - Update of slice that had documents
+ * - Update of slice that had no documents
+ * --> Poll until job is gone
  * 
- * Koord:
- * - Tel / Email Höhenmodell
- * - Stand Solr
- * - Stand altlasten
+ * 
+ * - aborting job
+ * --> abort long running job after 1 minute --> needs refactoring to seconds for abort time
+ * 
+ * - Call with wrong datasetname
+ * --> needs keeping the past x jobs in memory to get if the state was successful
+ * 
+ * - job chain: success success
+ * - job chain: error success
+ * 
+ * - count mismatch between view result and index sum
+ * --> needs view returning null for mandatory field
+ * 
+ * 
  */
 public class IndexSliceUpdater {		
     private static final Logger log = LoggerFactory.getLogger(IndexSliceUpdater.class);
 	
-	private static final String SOLR_HOST = "localhost";
-	private static final int SOLR_PORT = 8983;
 	private static final String SOLR_PATH_QUERY = "solr/gdi/select";
 	private static final String SOLR_PATH_UPDATE = "solr/gdi/update";
 		
 	private Job job;
-	private RestTemplate restTemplate;
+	private HttpClient client;
 	
 	private int lastDocCount;
 	private ObjectMapper mapper;
@@ -60,59 +67,16 @@ public class IndexSliceUpdater {
 		this.job = jobInfo;
 		this.mapper = new ObjectMapper();	
 		
-		RestTemplate templ = new RestTemplate();
-		registerSolrContentTypes(templ);
-		
-		this.restTemplate = templ;
-	
-		
+		this.client = configureNewClient();		
 		this.lastDocCount = queryDocCount();
 	}
 	
-	/*
-	 * Solr returns responses with text/plain;charset=utf-8, ...
-	 * This is unprecise, and must be registered with the RestTemplate.
-	 */
-	private static void registerSolrContentTypes(RestTemplate templ) {
+	private static HttpClient configureNewClient() {
 		
-		List<MediaType> supportedTypeList = new ArrayList<MediaType>();
-		supportedTypeList.add(MediaType.APPLICATION_JSON);
-		supportedTypeList.add(MediaType.TEXT_PLAIN);
+		HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
 		
-		List<HttpMessageConverter<?>> list = templ.getMessageConverters();
-		
-		int foundCount = 0;
-		for (HttpMessageConverter<?> converter : list) {
-			
-			if(converter instanceof MappingJackson2HttpMessageConverter) {
-				foundCount++;
-				
-				MappingJackson2HttpMessageConverter jConf = (MappingJackson2HttpMessageConverter)converter;
-				jConf.setSupportedMediaTypes(supportedTypeList);
-			}
-		}
-		
-		if(foundCount == 0) {
-			throw new RuntimeException(
-					"Did not find MappingJackson2HttpMessageConverter in RestTemplate to configure additional response content types");
-		}
-
-		
-		
-		
-		/*
-		
-		List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();        
-		//Add the Jackson Message converter
-		MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-
-		// Note: here we are making this converter to process any kind of response, 
-		// not only application/*json, which is the default behaviour
-		converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));        
-		messageConverters.add(converter);  
-		restTemplate.setMessageConverters(messageConverters); 
-		*/
-	}
+		return client;
+	}	
 	
 	private int queryDocCount() {		
 		int count = -1;
@@ -128,14 +92,16 @@ public class IndexSliceUpdater {
 				"facet.field", "facet"
 		};
 		
-		String url = buildUrl(SOLR_PATH_QUERY, qParams);
+		URI url = Util.buildUrl(SOLR_PATH_QUERY, qParams);
 		
-		log.info("{}: Querying doc count with url {}", job.getJobIdentifier(), url);
+		log.debug("{}: Querying doc count with url {}", job.getJobIdentifier(), url);
 		
-		String response = restTemplate.getForObject(url, String.class);
-		//assert200(response, url);
+		HttpRequest req = HttpRequest.newBuilder(url).GET().build();	
+		HttpResponse<String> response = sendBare(req);
+
+		assert200(response, url);
 		
-		JsonNode root = parseToNodes(response);
+		JsonNode root = parseToNodes(response.body());
 		JsonNode countArray = root.path("facet_counts").path("facet_fields").path("facet");
 		if(!countArray.isArray()) {
 			throw new RuntimeException(
@@ -160,6 +126,26 @@ public class IndexSliceUpdater {
 		return count;
 	}
 	
+	private HttpResponse<String> sendBare(HttpRequest req){
+		HttpResponse<String> resp;
+		
+		try {
+			resp = client.send(req, BodyHandlers.ofString());
+		}
+		catch(Exception e) {
+			String msg = MessageFormat.format(
+					"{0}: Exception occured when sending http request. {1}", 
+					job.getJobIdentifier(), 
+					e.getMessage()
+					);
+			
+			log.error(msg);
+			throw new RuntimeException(msg, e);
+		}
+		
+		return resp;
+	}
+	
 	private JsonNode parseToNodes(String json) {		
 		JsonNode res = null;
 		
@@ -173,18 +159,18 @@ public class IndexSliceUpdater {
 		return res;
 	}
 	
-	private void assert200(ResponseEntity<String> response, String url) {
+	private void assert200(HttpResponse<String> response, URI url) {
 		if(response == null) {
 			String msg = MessageFormat.format("{0}: Got null response for request {1}", job.getJobIdentifier(), url);
 			log.error(msg);
 			throw new RuntimeException(msg);
 		}
 		
-		if(response.getStatusCodeValue() != 200) {
+		if(response.statusCode() != 200) {
 			String msg = MessageFormat.format(
 					"{0}: Got status code {1} for request {2}",
 					job.getJobIdentifier(),
-					response.getStatusCodeValue(), 
+					response.statusCode(), 
 					url);
 			
 			log.error(msg);
@@ -192,40 +178,42 @@ public class IndexSliceUpdater {
 		}
 	}
 	
-	private static String buildUrl(String path, String[] queryParams) {
-		
-		if(queryParams != null && queryParams.length % 2 != 0) //must always be even number
-			throw new RuntimeException("Array queryParams must have even number of cells");
-		
-		UriComponentsBuilder builder = UriComponentsBuilder.newInstance();
-		builder.scheme("http");
-		builder.host(SOLR_HOST);
-		builder.port(SOLR_PORT);
-		builder.path(path);
-		
-		if(queryParams != null) {
-			MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-			for(int i=0; i<queryParams.length; i+=2) {
-				map.add(queryParams[i], queryParams[i+1]);
-			}
-			builder.queryParams(map);
-		}
-		
-		return builder.toUriString();
-	}
-	
 	public void execute() {
 		deleteAllDocsInFacet();
 		assertAfterDeleteCount();
 		startImport();
+		
+		DihPoller poller = new DihPoller(job);
+		poller.execute();
+
+		assertAfterInsertCount();
+	}
+	
+	private void assertAfterInsertCount() {
+		int curCount = queryDocCount();
+		
+		if ( !(curCount > this.lastDocCount) ) {
+			String msg = MessageFormat.format(
+					"{0}: Insert request failed. Still got {1} documents in index for dataset {2} (as before delete operation).)", 
+					job.getJobIdentifier(),
+					curCount,
+					job.getDataSetIdentifier()
+					);
+			
+			log.error(msg);					
+			throw new RuntimeException(msg);
+		}
+		else {
+			this.lastDocCount = curCount;
+		}		
 	}
 	
 	private void assertAfterDeleteCount() {
 		int curCount = queryDocCount();
 		
-		if (this.lastDocCount == 0) {
+		if (this.lastDocCount < 0) {
 			log.warn(
-					"{}: Can not verify delete as pre-delete count for {} is 0",
+					"{}: Can not verify delete. Solr had no documents of type {} in index before delete",
 					job.getJobIdentifier(),
 					job.getDataSetIdentifier());
 		}
@@ -240,7 +228,7 @@ public class IndexSliceUpdater {
 			log.error(msg);					
 			throw new RuntimeException(msg);
 		}
-		else {
+		else {			
 			this.lastDocCount = curCount;
 		}
 	}
@@ -248,10 +236,12 @@ public class IndexSliceUpdater {
 	private void deleteAllDocsInFacet() {
 		int commitPeriodMillis = 1000;
 		
-		String url = buildUrl(
+
+		URI url = Util.buildUrl(
 				SOLR_PATH_UPDATE, 
 				new String[] {"commitWithin", Integer.toString(commitPeriodMillis)}
 				);
+
 		
 		ObjectNode delete = mapper.createObjectNode();
 		delete.put("query", MessageFormat.format("facet:{0}", job.getDataSetIdentifier()));
@@ -259,7 +249,13 @@ public class IndexSliceUpdater {
 		ObjectNode root = mapper.createObjectNode();
 		root.set("delete", delete);
 		
-		restTemplate.postForObject(url, root, ResponseEntity.class); 
+		HttpRequest req = HttpRequest.newBuilder(url)
+				.POST(BodyPublishers.ofString(root.toString()))
+				.header("Content-Type", "application/json")
+				.build();
+		
+		HttpResponse<String> resp = sendBare(req);
+		assert200(resp, url);
 		
 		Util.sleep(commitPeriodMillis);
 		
@@ -269,6 +265,7 @@ public class IndexSliceUpdater {
 				url);
 	}
 	
+
 	private void startImport() {
 		
 		String filter = MessageFormat.format("facet:{0}", job.getDataSetIdentifier());
@@ -279,9 +276,11 @@ public class IndexSliceUpdater {
 				"clean", "false"
 		};
 		
-		String url = buildUrl(job.getDihPath(), qParams);
+		URI url = Util.buildUrl(job.getDihPath(), qParams);
 		
-		ResponseEntity<String> res = restTemplate.getForEntity(url, String.class);
+		HttpRequest req = HttpRequest.newBuilder(url).build();
+		HttpResponse<String> res = sendBare(req);
+		
 		assert200(res, url);
 		
 		log.info("{}: Sent insert request with url: {}.", 

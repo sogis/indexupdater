@@ -14,7 +14,7 @@ public class Job {
 		this(jobIdentifier, dataSetIdentifier, null, null);
 	}
 	
-	public Job(String jobIdentifier, String dataSetIdentifier, Integer pollIntervalMillis, String dihPath) {
+	public Job(String jobIdentifier, String dataSetIdentifier, Integer pollIntervalSeconds, String dihPath) {
 		
 		if(jobIdentifier == null || jobIdentifier.length() == 0)
 			throw new IllegalArgumentException("Attribute jobIdentifier must not be null in constructor");
@@ -24,7 +24,7 @@ public class Job {
 		
 		this.jobIdentifier = jobIdentifier;
 		this.dataSetIdentifier = dataSetIdentifier;
-		this.pollIntervalSeconds = pollIntervalMillis;
+		this.pollIntervalSeconds = pollIntervalSeconds;
 		this.dihPath = dihPath;
 	}
 	
@@ -32,16 +32,16 @@ public class Job {
 		return maxWorkDurationMinutes;
 	}
 
-	public void setMaxWorkDurationMinutes(Integer maxWorkDurationSecs) {
-		this.maxWorkDurationMinutes = maxWorkDurationSecs;
+	public void setMaxWorkDurationMinutes(Integer maxWorkDurationMinutes) {
+		this.maxWorkDurationMinutes = maxWorkDurationMinutes;
 	}
 
 	public Integer getPollIntervalSeconds() {
 		return pollIntervalSeconds;
 	}
 
-	public void setPollIntervalSeconds(Integer pollIntervalMillis) {
-		this.pollIntervalSeconds = pollIntervalMillis;
+	public void setPollIntervalSeconds(Integer setPollIntervalSeconds) {
+		this.pollIntervalSeconds = setPollIntervalSeconds;
 	}
 
 	public String getJobIdentifier() {
