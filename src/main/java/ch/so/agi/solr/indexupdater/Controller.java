@@ -25,7 +25,7 @@ public class Controller {
     	
     	
     	String jobId = IdentifierForCurrentTime.generate();
-    	Job j = new Job(jobId, dataset, null);
+    	Job j = new Job(jobId, dataset);
     	QueueOfJobs.add(j);
     	
     	return jobId;

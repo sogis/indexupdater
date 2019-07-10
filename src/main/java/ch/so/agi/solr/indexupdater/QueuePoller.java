@@ -33,7 +33,23 @@ public class QueuePoller {
     		return;
     	}
 
-    	indexJob(newJob);    	
+    	logInfo(MessageFormat.format("{0}: Starting indexing. Queue state: {1}", newJob, QueueOfJobs.asString()));
+    	
+    	complementDefaults(newJob);
+    	
+    	IndexSliceUpdater updater = new IndexSliceUpdater(newJob);
+    	updater.execute();
+    }
+    
+    private static void complementDefaults(Job job) {
+    	if(job.getDihPath() == null)
+    		job.setDihPath("solr/gdi/dataimport/dih");
+    	
+    	if(job.getMaxWorkDurationMinutes() == null)
+    		job.setMaxWorkDurationMinutes(30);
+    	
+    	if(job.getPollIntervalSeconds() == null)
+    		job.setPollIntervalSeconds(2);
     }
     
     private boolean needToEmitLiveSign() {
@@ -43,16 +59,5 @@ public class QueuePoller {
     private void logInfo(String msg) {
     	log.info(msg);
     	lastAliveEmit = LocalDateTime.now();
-    }
-    
-    private void indexJob(Job newJob) {
-    	logInfo(MessageFormat.format("Starting indexing for {0}. Queue state: {1}", newJob, QueueOfJobs.asString()));
-    	
-    	try {
-    		Thread.sleep(2000);
-    	}
-    	catch(InterruptedException ie) {}
-    }
-    
-    
+    }  
 }
