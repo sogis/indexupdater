@@ -10,6 +10,8 @@ public class Job {
 	private String dihPath;
 	private Integer maxWorkDurationSeconds;
 	
+	private JobEndState endState;
+	
 	public Job(String jobIdentifier, String dataSetIdentifier) {
 		this(jobIdentifier, dataSetIdentifier, null, null);
 	}
@@ -67,13 +69,24 @@ public class Job {
 	public void setDihPath(String dihPath) {
 		this.dihPath = dihPath;
 	}
+	
+	public JobEndState getEndState() {
+		return endState;
+	}
+
+	public void setEndState(JobEndState endState) {
+		this.endState = endState;
+	}
 
 	@Override
 	public String toString() {
-		String repr = MessageFormat.format("Job [id:{0}, ds:{1}]", jobIdentifier, dataSetIdentifier);		
+		String repr = null;
+		
+		if(endState == null)
+			repr = MessageFormat.format("Job [id:{0}, ds:{1}]", jobIdentifier, dataSetIdentifier);
+		else
+			repr = MessageFormat.format("Job [id:{0}, ds:{1}, ended:{2}]", jobIdentifier, dataSetIdentifier, endState);
+		
 		return repr;
 	}
-	
-	
-
 }

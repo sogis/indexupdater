@@ -9,6 +9,13 @@ group = 'ch.so.agi.solr'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
+sourceSets {
+    intTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 repositories {
 	mavenCentral()
 }
@@ -18,4 +25,18 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-test'
+	
 }
+
+task integrationTest(type: Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.intTest.output.classesDirs
+    classpath = sourceSets.intTest.runtimeClasspath
+    shouldRunAfter test
+}
+
+

@@ -14,6 +14,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.web.client.RestTemplate;
 
 import ch.so.agi.solr.indexupdater.model.Job;
+import ch.so.agi.solr.indexupdater.model.JobEndState;
 
 /*
  * Polls solr for the state of the currently
@@ -93,6 +94,8 @@ public class DihPoller {
 			
 			throw new DihJobHangingException(msg);
 		}
+		
+		job.setEndState(JobEndState.ABORTED);
 	}
 	
 	private DihResponse queryJobState() {

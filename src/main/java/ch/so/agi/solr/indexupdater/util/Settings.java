@@ -2,12 +2,17 @@ package ch.so.agi.solr.indexupdater.util;
 
 import java.text.MessageFormat;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 @Configuration
-@ConfigurationProperties(prefix = "app")
+@ConfigurationProperties()
 public class Settings {
+	
+	@Autowired
+	private static Settings instance;
 	
 	private boolean configChecked = false;
 	
@@ -19,13 +24,16 @@ public class Settings {
 	
 	private int logSilenceMaxDurationSeconds;
 	
-
 	private int dihPollIntervalSeconds;
 	private int dihImportMaxDurationSeconds;
 	private String dihPath = null;
 	
-	public Settings() {}
-	
+	public static Settings instance() {
+		if(Settings.instance == null)
+			throw new RuntimeException("Static attribute Settings.instance is null");
+		
+		return Settings.instance;
+	}
 	
 	private void assertConfigComplete() {
 		

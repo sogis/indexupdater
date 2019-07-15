@@ -92,7 +92,7 @@ public class IndexSliceUpdater {
 				"facet", "true",
 				"facet.field", "facet"
 		};
-		
+				
 		URI url = Util.buildUrl(settings.getSolrPathQuery(), qParams);
 		
 		log.debug("{}: Querying doc count with url {}", job.getJobIdentifier(), url);

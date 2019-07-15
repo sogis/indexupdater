@@ -12,25 +12,85 @@ import java.util.Queue;
  */
 public class QueueOfJobs {
 	
-	private static Queue<Job> jobs = new LinkedList<Job>();
+	private static Queue<Job> pendingJobs = new LinkedList<Job>();
+	private static Job working_Placeholder = null; // This is only a sibling with same identity-information. Due to thread safety, the real working job is only accessed from the thread of the background worker
+	private static Queue<Job> endedJobs = new LinkedList<Job>();
 	
 	
 	public static synchronized void add(Job job) {
 		if(job == null)
 			throw new RuntimeException("Method argument [job] must not be null");
 			
-		jobs.add(job);
+		pendingJobs.add(job);
+	}
+	
+	public static synchronized String queryJobState(String jobIdent) {
+		
+		Job found = null;
+		for(Job pending : pendingJobs) {
+			if(jobIdent.equals(pending.getJobIdentifier())){
+				found = pending;
+				break;
+			}
+		}
+		
+		if(found != null)
+			return "PENDING";
+		
+		if(working_Placeholder != null && jobIdent.equals(working_Placeholder.getJobIdentifier()))
+			return "WORKING";
+		
+		for(Job ended : endedJobs) {
+			if(jobIdent.equals(ended.getJobIdentifier())){
+				found = ended;
+				break;
+			}
+		}
+		
+		if(found != null) {
+			return "ENDED_" + found.getEndState().toString();
+		}
+		else {
+			return null;
+		}
 	}
 	
 	/*
 	 * Returns the longest waiting Job, of NULL if
 	 * the queue is empty.
 	 */
-	public static synchronized Job remove() {
-		return jobs.poll();
+	public static synchronized Job swapEndedForPending(Job ended) {
+		
+		if(ended != null) {
+			endedJobs.add(ended);
+			
+			if(endedJobs.size() > 20)
+				endedJobs.poll();
+		}
+			
+		Job next = pendingJobs.poll();
+		
+		if(next != null) {
+			working_Placeholder = new Job(next.getJobIdentifier(), next.getDataSetIdentifier());
+		}
+		
+		return next;
 	}
 	
 	public static synchronized String asString() {
-		return MessageFormat.format("[{0}]", jobs);
+		
+		String msg = null;
+		if(working_Placeholder != null)
+			msg = MessageFormat.format("Working on job {0}.", working_Placeholder.getJobIdentifier());
+		else
+			msg = "Not working on a job.";
+		
+		if(pendingJobs.size() > 0)
+			msg += MessageFormat.format(" Pending: [{0}]", pendingJobs);
+		
+		if(endedJobs.size() > 0)
+			msg += MessageFormat.format(" Latest ended Jobs: [{0}]", endedJobs);
+		
+		return msg;
 	}
 }
