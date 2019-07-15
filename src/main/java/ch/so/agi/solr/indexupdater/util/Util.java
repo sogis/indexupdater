@@ -3,14 +3,15 @@ package ch.so.agi.solr.indexupdater.util;
 import java.net.URI;
 import java.text.MessageFormat;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class Util {
 	
-	private static final String SOLR_HOST = "localhost";
-	private static final int SOLR_PORT = 8983;
+	@Autowired
+	private static Settings settings;
 	
 	public static void sleep(int millis) {
 		int numTries = 3;
@@ -34,9 +35,9 @@ public class Util {
 			throw new RuntimeException("Array queryParams must have even number of cells");
 		
 		UriComponentsBuilder builder = UriComponentsBuilder.newInstance();
-		builder.scheme("http");
-		builder.host(Util.SOLR_HOST);
-		builder.port(Util.SOLR_PORT);
+		builder.scheme(settings.getSolrProtocol());
+		builder.host(settings.getSolrHost());
+		builder.port(settings.getSolrPort());
 		builder.path(path);
 		
 		if(queryParams != null) {

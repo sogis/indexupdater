@@ -1,5 +1,6 @@
 package ch.so.agi.solr.indexupdater;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -12,14 +13,17 @@ import org.slf4j.LoggerFactory;
 import ch.so.agi.solr.indexupdater.model.Job;
 import ch.so.agi.solr.indexupdater.model.QueueOfJobs;
 import ch.so.agi.solr.indexupdater.util.IndexSliceUpdater;
+import ch.so.agi.solr.indexupdater.util.Settings;
 
 @Component
 public class QueuePoller {
 
     private static final Logger log = LoggerFactory.getLogger(QueuePoller.class);
-    private static final int MAX_SILENCE_SECONDS = 3;
     
     private LocalDateTime lastAliveEmit = LocalDateTime.now();
+    
+    @Autowired
+    Settings settings;
     
     
     @Scheduled(fixedDelay = 1500)
@@ -29,7 +33,7 @@ public class QueuePoller {
     	
     	if(newJob == null) {
     		if(needToEmitLiveSign())
-    			logInfo("Job queue ist empty, going back to sleep");
+    			logInfo("Job queue is currently empty, going back to sleep");
     		
     		return;
     	}
@@ -42,19 +46,20 @@ public class QueuePoller {
     	updater.execute();
     }
     
-    private static void complementDefaults(Job job) {
+    private void complementDefaults(Job job) {
     	if(job.getDihPath() == null)
-    		job.setDihPath("solr/gdi/dih");
+    		job.setDihPath(settings.getDihPath()); //"solr/gdi/dih"
     	
-    	if(job.getMaxWorkDurationMinutes() == null)
-    		job.setMaxWorkDurationMinutes(30);
+    	if(job.getMaxWorkDurationSeconds() == null)
+    		job.setMaxWorkDurationSeconds(settings.getDihImportMaxDurationSeconds());
     	
     	if(job.getPollIntervalSeconds() == null)
-    		job.setPollIntervalSeconds(2);
+    		job.setPollIntervalSeconds(settings.getDihPollIntervalSeconds());
     }
     
     private boolean needToEmitLiveSign() {
-    	return lastAliveEmit.plusSeconds(MAX_SILENCE_SECONDS).isBefore(LocalDateTime.now());
+    	int maxSilence = settings.getLogSilenceMaxDurationSeconds();
+    	return lastAliveEmit.plusSeconds(maxSilence).isBefore(LocalDateTime.now());
     }
     
     private void logInfo(String msg) {

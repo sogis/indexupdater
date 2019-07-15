@@ -11,6 +11,7 @@ import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,7 +38,7 @@ import ch.so.agi.solr.indexupdater.model.Job;
  * 
  * 
  * - aborting job
- * --> abort long running job after 1 minute --> needs refactoring to seconds for abort time
+ * --> abort long running job after 1 minute
  * 
  * - Call with wrong datasetname
  * --> needs keeping the past x jobs in memory to get if the state was successful
@@ -52,9 +53,9 @@ import ch.so.agi.solr.indexupdater.model.Job;
  */
 public class IndexSliceUpdater {		
     private static final Logger log = LoggerFactory.getLogger(IndexSliceUpdater.class);
-	
-	private static final String SOLR_PATH_QUERY = "solr/gdi/select";
-	private static final String SOLR_PATH_UPDATE = "solr/gdi/update";
+    
+    @Autowired
+    private Settings settings;
 		
 	private Job job;
 	private HttpClient client;
@@ -92,7 +93,7 @@ public class IndexSliceUpdater {
 				"facet.field", "facet"
 		};
 		
-		URI url = Util.buildUrl(SOLR_PATH_QUERY, qParams);
+		URI url = Util.buildUrl(settings.getSolrPathQuery(), qParams);
 		
 		log.debug("{}: Querying doc count with url {}", job.getJobIdentifier(), url);
 		
@@ -238,7 +239,7 @@ public class IndexSliceUpdater {
 		
 
 		URI url = Util.buildUrl(
-				SOLR_PATH_UPDATE, 
+				settings.getSolrPathUpdate(), 
 				new String[] {"commitWithin", Integer.toString(commitPeriodMillis)}
 				);
 
@@ -267,8 +268,6 @@ public class IndexSliceUpdater {
 	
 
 	private void startImport() {
-		
-		String filter = MessageFormat.format("facet:{0}", job.getDataSetIdentifier());
 		
 		String[] qParams = new String[] {
 				"command", "full-import",

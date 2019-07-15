@@ -39,7 +39,7 @@ public class DihPoller {
 	public void execute() {
 		
 		boolean loop = true;
-		LocalDateTime loopEndTime = LocalDateTime.now().plusMinutes(job.getMaxWorkDurationMinutes());
+		LocalDateTime loopEndTime = LocalDateTime.now().plusSeconds(job.getMaxWorkDurationSeconds());
 				
 		while(loop) {
 			Util.sleep(1000);

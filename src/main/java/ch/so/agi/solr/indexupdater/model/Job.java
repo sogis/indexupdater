@@ -8,7 +8,7 @@ public class Job {
 	
 	private Integer pollIntervalSeconds;
 	private String dihPath;
-	private Integer maxWorkDurationMinutes;
+	private Integer maxWorkDurationSeconds;
 	
 	public Job(String jobIdentifier, String dataSetIdentifier) {
 		this(jobIdentifier, dataSetIdentifier, null, null);
@@ -28,12 +28,12 @@ public class Job {
 		this.dihPath = dihPath;
 	}
 	
-	public Integer getMaxWorkDurationMinutes() {
-		return maxWorkDurationMinutes;
+	public Integer getMaxWorkDurationSeconds() {
+		return maxWorkDurationSeconds;
 	}
 
-	public void setMaxWorkDurationMinutes(Integer maxWorkDurationMinutes) {
-		this.maxWorkDurationMinutes = maxWorkDurationMinutes;
+	public void setMaxWorkDurationSeconds(Integer maxWorkDurationSeconds) {
+		this.maxWorkDurationSeconds = maxWorkDurationSeconds;
 	}
 
 	public Integer getPollIntervalSeconds() {
