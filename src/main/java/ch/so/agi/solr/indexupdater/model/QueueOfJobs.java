@@ -35,10 +35,10 @@ public class QueueOfJobs {
 		}
 		
 		if(found != null)
-			return "PENDING";
+			return JobState.PENDING.toString();
 		
 		if(working_Placeholder != null && jobIdent.equals(working_Placeholder.getJobIdentifier()))
-			return "WORKING";
+			return JobState.WORKING.toString();
 		
 		for(Job ended : endedJobs) {
 			if(jobIdent.equals(ended.getJobIdentifier())){
@@ -48,7 +48,7 @@ public class QueueOfJobs {
 		}
 		
 		if(found != null) {
-			return "ENDED_" + found.getEndState().toString();
+			return found.getEndState().toString();
 		}
 		else {
 			return null;
@@ -70,9 +70,10 @@ public class QueueOfJobs {
 			
 		Job next = pendingJobs.poll();
 		
-		if(next != null) {
+		if(next != null)
 			working_Placeholder = new Job(next.getJobIdentifier(), next.getDataSetIdentifier());
-		}
+		else
+			working_Placeholder = null;
 		
 		return next;
 	}
@@ -86,10 +87,10 @@ public class QueueOfJobs {
 			msg = "Not working on a job.";
 		
 		if(pendingJobs.size() > 0)
-			msg += MessageFormat.format(" Pending: [{0}]", pendingJobs);
+			msg += MessageFormat.format(" Pending: {0}", pendingJobs);
 		
 		if(endedJobs.size() > 0)
-			msg += MessageFormat.format(" Latest ended Jobs: [{0}]", endedJobs);
+			msg += MessageFormat.format(" Latest ended Jobs: {0}", endedJobs);
 		
 		return msg;
 	}

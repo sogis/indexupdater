@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.so.agi.solr.indexupdater.model.Job;
-import ch.so.agi.solr.indexupdater.model.JobEndState;
+import ch.so.agi.solr.indexupdater.model.JobState;
 import ch.so.agi.solr.indexupdater.model.QueueOfJobs;
 import ch.so.agi.solr.indexupdater.util.IndexSliceUpdater;
 import ch.so.agi.solr.indexupdater.util.Settings;
@@ -26,7 +26,8 @@ public class QueuePoller {
     
     private Job working = null;
     
-    Settings settings = Settings.instance();
+    @Autowired
+    Settings settings; 
     
     
     @Scheduled(fixedDelay = 1500)
@@ -50,10 +51,11 @@ public class QueuePoller {
         	IndexSliceUpdater updater = new IndexSliceUpdater(working);
         	updater.execute();
         	
-        	working.setEndState(JobEndState.OK);
+        	if( !(working.getEndState() == JobState.ENDED_ABORTED) )
+        		working.setEndState(JobState.ENDED_OK);
     	}
     	catch(Exception e) {
-    		working.setEndState(JobEndState.EXCEPTION);
+    		working.setEndState(JobState.ENDED_EXCEPTION);
     		throw e;
     	}
     }
@@ -63,7 +65,7 @@ public class QueuePoller {
     	boolean setDihPath = false, setWorkDuration = false, setPollInterval = false;
  
     	if(job.getDihPath() == null) {
-    		job.setDihPath(settings.getDihPath());
+    		job.setDihPath(settings.getDihDefaultPath());
     		setDihPath = true;
     	}
     	
@@ -82,15 +84,15 @@ public class QueuePoller {
     		ArrayList<String> parts = new ArrayList<>();
     		
     		if(setDihPath)
-    			parts.add(MessageFormat.format("Dih path: {0}", job.getDihPath()));
+    			parts.add("Dih path");
     		
     		if(setWorkDuration)
-    			parts.add(MessageFormat.format("Max. work duration [s]: {0}", job.getMaxWorkDurationSeconds()));
+    			parts.add("Max. work duration");
     		
     		if(setDihPath)
-    			parts.add(MessageFormat.format("Poll interval [s]: {0}", job.getPollIntervalSeconds()));
+    			parts.add("Poll interval");
     		
-    		log.info("{}: Set default(s) for job: {}", job.getJobIdentifier(), parts);
+    		log.info("{}: Set default(s) {} for job. Job config is {}", job.getJobIdentifier(), parts, job);
     	}
     }
     

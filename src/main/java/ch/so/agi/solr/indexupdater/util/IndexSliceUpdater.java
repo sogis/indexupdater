@@ -1,23 +1,20 @@
 package ch.so.agi.solr.indexupdater.util;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.text.MessageFormat;
-import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ch.so.agi.solr.indexupdater.model.Job;
+import ch.so.agi.solr.indexupdater.model.JobState;
 
 /*
  * Handles the complete update of one entity / facet of a
@@ -54,11 +51,9 @@ import ch.so.agi.solr.indexupdater.model.Job;
 public class IndexSliceUpdater {		
     private static final Logger log = LoggerFactory.getLogger(IndexSliceUpdater.class);
     
-    @Autowired
-    private Settings settings;
-		
+    private static Settings settings = Settings.instance();
+    
 	private Job job;
-	private HttpClient client;
 	
 	private int lastDocCount;
 	private ObjectMapper mapper;
@@ -67,17 +62,9 @@ public class IndexSliceUpdater {
 	public IndexSliceUpdater(Job jobInfo) {
 		this.job = jobInfo;
 		this.mapper = new ObjectMapper();	
-		
-		this.client = configureNewClient();		
+				
 		this.lastDocCount = queryDocCount();
 	}
-	
-	private static HttpClient configureNewClient() {
-		
-		HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
-		
-		return client;
-	}	
 	
 	private int queryDocCount() {		
 		int count = -1;
@@ -93,12 +80,12 @@ public class IndexSliceUpdater {
 				"facet.field", "facet"
 		};
 				
-		URI url = Util.buildUrl(settings.getSolrPathQuery(), qParams);
+		URI url = Util.buildSolrUrl(settings.getSolrPathQuery(), qParams);
 		
 		log.debug("{}: Querying doc count with url {}", job.getJobIdentifier(), url);
 		
 		HttpRequest req = HttpRequest.newBuilder(url).GET().build();	
-		HttpResponse<String> response = sendBare(req);
+		HttpResponse<String> response = Util.sendBare(req, job.getJobIdentifier());
 
 		assert200(response, url);
 		
@@ -125,26 +112,6 @@ public class IndexSliceUpdater {
 		}
 		
 		return count;
-	}
-	
-	private HttpResponse<String> sendBare(HttpRequest req){
-		HttpResponse<String> resp;
-		
-		try {
-			resp = client.send(req, BodyHandlers.ofString());
-		}
-		catch(Exception e) {
-			String msg = MessageFormat.format(
-					"{0}: Exception occured when sending http request. {1}", 
-					job.getJobIdentifier(), 
-					e.getMessage()
-					);
-			
-			log.error(msg);
-			throw new RuntimeException(msg, e);
-		}
-		
-		return resp;
 	}
 	
 	private JsonNode parseToNodes(String json) {		
@@ -187,7 +154,8 @@ public class IndexSliceUpdater {
 		DihPoller poller = new DihPoller(job);
 		poller.execute();
 
-		assertAfterInsertCount();
+		if(job.getEndState() != JobState.ENDED_ABORTED)
+			assertAfterInsertCount();
 	}
 	
 	private void assertAfterInsertCount() {
@@ -238,7 +206,7 @@ public class IndexSliceUpdater {
 		int commitPeriodMillis = 1000;
 		
 
-		URI url = Util.buildUrl(
+		URI url = Util.buildSolrUrl(
 				settings.getSolrPathUpdate(), 
 				new String[] {"commitWithin", Integer.toString(commitPeriodMillis)}
 				);
@@ -255,7 +223,7 @@ public class IndexSliceUpdater {
 				.header("Content-Type", "application/json")
 				.build();
 		
-		HttpResponse<String> resp = sendBare(req);
+		HttpResponse<String> resp = Util.sendBare(req, job.getJobIdentifier());
 		assert200(resp, url);
 		
 		Util.sleep(commitPeriodMillis);
@@ -275,10 +243,10 @@ public class IndexSliceUpdater {
 				"clean", "false"
 		};
 		
-		URI url = Util.buildUrl(job.getDihPath(), qParams);
+		URI url = Util.buildSolrUrl(job.getDihPath(), qParams);
 		
 		HttpRequest req = HttpRequest.newBuilder(url).build();
-		HttpResponse<String> res = sendBare(req);
+		HttpResponse<String> res = Util.sendBare(req, job.getJobIdentifier());
 		
 		assert200(res, url);
 		

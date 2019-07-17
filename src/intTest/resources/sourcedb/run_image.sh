@@ -6,7 +6,14 @@ echo "Uses the following Docker image:"
 echo "https://hub.docker.com/r/mdillon/postgis"
 echo "=========================================================="
 
-docker run -it \
+if [ "$1" == "bg" ] #bg - background
+  then
+    PARA="-d"
+  else
+    PARA=""
+fi
+
+docker run $PARA  \
     --name pgdev \
     -v $(pwd)/pg_initfiles:/docker-entrypoint-initdb.d \
     -p 5432:5432 \

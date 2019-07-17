@@ -14,7 +14,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.web.client.RestTemplate;
 
 import ch.so.agi.solr.indexupdater.model.Job;
-import ch.so.agi.solr.indexupdater.model.JobEndState;
+import ch.so.agi.solr.indexupdater.model.JobState;
 
 /*
  * Polls solr for the state of the currently
@@ -39,31 +39,65 @@ public class DihPoller {
 	 */
 	public void execute() {
 		
-		boolean loop = true;
 		LocalDateTime loopEndTime = LocalDateTime.now().plusSeconds(job.getMaxWorkDurationSeconds());
-				
-		while(loop) {
-			Util.sleep(1000);
-					
-			DihResponse dihResponse = queryJobState();
+		
+		PollState state = PollState.DIH_WORKING_CLEAN;
+		
+		while(state == PollState.DIH_WORKING_CLEAN) {
+			Util.sleep(job.getPollIntervalSeconds() * 1000);
 			
-			if(dihResponse.getDocs_skipped() > 0) {
-				abortJob();
+			if(LocalDateTime.now().isAfter(loopEndTime)) {
+				state = PollState.TIMEOUT_EXCEEDED;
+				break;
 			}
-			if (DihResponse.STATUS_BUSY.equals(dihResponse.getStatus())) {
-				log.info("{}: Indexing... Processed {} documents.", job.getJobIdentifier(), dihResponse.getDocs_processed());
-			}
-			else if(DihResponse.STATUS_IDLE.equals(dihResponse.getStatus())) {
-				loop = false;
-			}
-			else if(LocalDateTime.now().isAfter(loopEndTime)) {
-				abortJob();
-			}				
+			
+			state = queryDihState();
+		}
+		
+		if(state == PollState.DIH_WORKING_SKIPPED_DOCS || state == PollState.TIMEOUT_EXCEEDED) {
+			state = tryAbortJob(state);
+		}
+		
+		assertDihIdle(state);		
+	}
+	
+	private void assertDihIdle(PollState state) {
+		if(state != PollState.DIH_IDLE) {
+			throw new IllegalStateException(MessageFormat.format(
+					"{0}: DIH must be in state {1} when ending poll for job", 
+					job.getJobIdentifier(),
+					state
+					));
 		}
 	}
 	
-	private void abortJob() {
+	private PollState queryDihState() {
+		PollState res = null;
 		
+		DihResponse dihResponse = queryJobState();
+		
+		if(dihResponse.getDocs_skipped() > 0) {
+			res = PollState.DIH_WORKING_SKIPPED_DOCS;
+		}
+		else if (DihResponse.STATUS_BUSY.equals(dihResponse.getStatus())) {
+			log.info("{}: Indexing... Processed {} documents.", job.getJobIdentifier(), dihResponse.getDocs_processed());
+			res = PollState.DIH_WORKING_CLEAN;
+		}
+		else if(DihResponse.STATUS_IDLE.equals(dihResponse.getStatus())) {
+			res = PollState.DIH_IDLE;
+		}
+		else {
+			throw new IllegalStateException(MessageFormat.format(
+					"The returned DIH response is not handled in Indexupdater. DihResponse: {0}", 
+					dihResponse
+					));
+		}		
+		
+		return res;
+	}
+	
+	private PollState tryAbortJob(PollState state) {		
+		PollState res = null;		
 		DihResponse dihResponse = null;
 		
 		for(int i=0; i<3; i++) {
@@ -71,15 +105,15 @@ public class DihPoller {
 			Util.sleep(100);
 			dihResponse = queryJobState();
 			
-			if(dihResponse.getStatus() == dihResponse.STATUS_IDLE)
+			if(DihResponse.STATUS_IDLE.equals(dihResponse.getStatus()))
 				break;
 			
-			log.info("{}: Tried {} time(s) to abort job - not successful yet", job.getJobIdentifier(), i);
+			log.info("{}: Tried {} time(s) to abort job - not successful yet", job.getJobIdentifier(), i+1);
 			
 			Util.sleep(3000);
 		}
 		
-		if( !(dihResponse.getStatus() == dihResponse.STATUS_IDLE) ) {
+		if( !(DihResponse.STATUS_IDLE.equals(dihResponse.getStatus())) ) {
 			
 			String express = "******************************************************************************************";			
 			String msg = MessageFormat.format(
@@ -94,13 +128,18 @@ public class DihPoller {
 			
 			throw new DihJobHangingException(msg);
 		}
+		else {
+			log.info("{}: Succesfully aborted job. DIH is currently idle", job.getJobIdentifier());
+			job.setEndState(JobState.ENDED_ABORTED);
+			res = PollState.DIH_IDLE;
+		}
 		
-		job.setEndState(JobEndState.ABORTED);
+		return res;
 	}
 	
 	private DihResponse queryJobState() {
 		
-		URI url = Util.buildUrl(
+		URI url = Util.buildSolrUrl(
 				job.getDihPath(), 
 				new String[] {"command", "status"});
 		
@@ -122,7 +161,7 @@ public class DihPoller {
 	
 	private DihResponse sendJobAbort() {
 		
-		URI url = Util.buildUrl(
+		URI url = Util.buildSolrUrl(
 				job.getDihPath(), 
 				new String[] {"command", "abort"});
 		
@@ -175,3 +214,8 @@ public class DihPoller {
 		return templ;
 	}
 }
+
+enum PollState {
+	DIH_WORKING_CLEAN, DIH_WORKING_SKIPPED_DOCS, TIMEOUT_EXCEEDED, DIH_IDLE 
+}
+	

@@ -6,7 +6,7 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 group = 'ch.so.agi.solr'
-version = '0.0.1-SNAPSHOT'
+//version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
 sourceSets {
@@ -27,16 +27,90 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	
 	intTestImplementation 'org.springframework.boot:spring-boot-starter-test'
-	
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-web'	
 }
 
-task integrationTest(type: Test) {
+task copyJar(type: Copy, dependsOn: build){
+    from file("$buildDir/libs/indexupdater.jar")
+    into file("$projectDir/img_build/tmp")
+}
+
+task startDb(type:Exec) {
+ 	workingDir "$projectDir/src/intTest/resources/sourcedb"
+ 	commandLine './run_image.sh', 'bg'
+}
+
+task startSolr(type:Exec) {
+ 	workingDir "$projectDir/src/intTest/resources/solr"
+ 	commandLine './run_image.sh'
+}
+
+task startEnv(){
+	//dependsOn startDb
+	//dependsOn startSolr	
+	
+	doLast {
+        sleep(5000)
+    }
+}
+
+task buildImage(type:Exec, dependsOn: copyJar) {
+	def githash = getCheckedOutGitCommitHash()
+	def buildident = System.getProperty('TRAVIS_BUILD_NUMBER','localbuild')
+	def build_timestamp = getTimestamp()
+
+
+ 	workingDir "$projectDir/img_build"
+ 	commandLine 'docker', 'build',
+				'--no-cache', '--force-rm',
+				'-t', "sogis/indexupdater:$buildident",
+				'--label', "indexupdater.created=$build_timestamp", 
+				'--label', "indexupdater.git_commit=$githash",
+				'--label', "indexupdater.travis_build=$buildident",
+				'-f', 'Dockerfile',  '.'
+}
+
+
+task tagImage(type:Exec, dependsOn: buildImage) {
+	def buildident = System.getProperty('TRAVIS_BUILD_NUMBER','localbuild')
+	
+ 	commandLine 'docker', 'tag', 
+				"sogis/indexupdater:$buildident",
+				"sogis/indexupdater:latest"
+}
+
+task runImage(type:Exec, dependsOn: tagImage){
+ 	workingDir "$projectDir/img_build"
+ 	commandLine './run_image.sh', 'bg'
+ 	
+ 	doLast {
+        sleep(5000)
+    }
+}
+
+task intTest(type: Test) {
     description = 'Runs integration tests.'
     group = 'verification'
 
     testClassesDirs = sourceSets.intTest.output.classesDirs
     classpath = sourceSets.intTest.runtimeClasspath
     shouldRunAfter test
+    
+    mustRunAfter startEnv
+    mustRunAfter runImage
 }
 
+task testImage(){
+	dependsOn startEnv
+	dependsOn runImage
+	dependsOn intTest	
+}
 
+def getCheckedOutGitCommitHash() {
+  'git log -1 --pretty=%H'.execute().text.trim()
+}
+
+def getTimestamp() {
+    def date = new Date()
+    return date.format('yyyy-MM-dd HH:mm:ss')
+}

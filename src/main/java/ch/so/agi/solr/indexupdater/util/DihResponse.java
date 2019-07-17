@@ -31,11 +31,18 @@ public class DihResponse {
 	
 	@JsonProperty("statusMessages")
 	private void unpackMessages(Map<String, String> statusMessages){
-		this.docs_processed = Integer.parseInt(
-				statusMessages.get("Total Documents Processed"));
 		
-		this.docs_skipped = Integer.parseInt(
-				statusMessages.get("Total Documents Skipped"));
+		String processed = statusMessages.get("Total Documents Processed");
+		if(processed != null && processed.length() > 0)
+			this.docs_processed = Integer.parseInt(processed);
+		else
+			this.docs_processed = 0;
+		
+		String skipped = statusMessages.get("Total Documents Skipped");
+		if(skipped != null && skipped.length() > 0)
+			this.docs_skipped = Integer.parseInt(skipped);
+		else
+			this.docs_skipped = 0;
 	}
 	
 	public String getStatus() {

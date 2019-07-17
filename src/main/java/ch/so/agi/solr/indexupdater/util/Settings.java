@@ -2,16 +2,13 @@ package ch.so.agi.solr.indexupdater.util;
 
 import java.text.MessageFormat;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 @Configuration
 @ConfigurationProperties()
 public class Settings {
 	
-	@Autowired
 	private static Settings instance;
 	
 	private boolean configChecked = false;
@@ -26,16 +23,17 @@ public class Settings {
 	
 	private int dihPollIntervalSeconds;
 	private int dihImportMaxDurationSeconds;
-	private String dihPath = null;
+	private String dihDefaultPath;
 	
-	public static Settings instance() {
-		if(Settings.instance == null)
-			throw new RuntimeException("Static attribute Settings.instance is null");
-		
+	public static Settings instance() {		
 		return Settings.instance;
 	}
 	
-	private void assertConfigComplete() {
+	public Settings() {
+		Settings.instance = this; //Hack to let Spring create the instance, and use it also in static context's.
+	}
+	
+	public void assertConfigComplete() {
 		
 		
 		if(this.configChecked)
@@ -44,7 +42,7 @@ public class Settings {
 		String[] stringSettings = new String[] {
 				solrProtocol,
 				solrHost,
-				dihPath,
+				dihDefaultPath,
 				solrPathQuery,
 				solrPathUpdate
 				};
@@ -93,7 +91,7 @@ public class Settings {
 		String defaults = MessageFormat.format(
 				"Default settings (DIH path: {0}, Poll interval [s]: {1}, Max. import duration [s]: {2}"
 				+ ", Max silence duration on log [s]: {3})", 
-				dihPath,
+				dihDefaultPath,
 				dihPollIntervalSeconds,
 				dihImportMaxDurationSeconds,
 				logSilenceMaxDurationSeconds
@@ -104,30 +102,18 @@ public class Settings {
 		return repr;
 	}	
 
-	public String getSolrProtocol() {
+	public BaseAddress getSolrBaseAddress() {
 		assertConfigComplete();
 		
-		return solrProtocol;
+		return new BaseAddress(solrProtocol, solrHost, solrPort);
 	}
 
 	public void setSolrProtocol(String solrProtocol) {		
 		this.solrProtocol = solrProtocol;
 	}
 
-	public String getSolrHost() {
-		assertConfigComplete();
-		
-		return solrHost;
-	}
-
 	public void setSolrHost(String solrHost) {
 		this.solrHost = solrHost;
-	}
-
-	public int getSolrPort() {
-		assertConfigComplete();
-		
-		return solrPort;
 	}
 
 	public void setSolrPort(int solrPort) {
@@ -184,13 +170,13 @@ public class Settings {
 		this.dihImportMaxDurationSeconds = dihImportMaxDurationSeconds;
 	}
 
-	public String getDihPath() {
+	public String getDihDefaultPath() {
 		assertConfigComplete();
 		
-		return dihPath;
+		return dihDefaultPath;
 	}
 
-	public void setDihPath(String dihPath) {
-		this.dihPath = dihPath;
+	public void setDihDefaultPath(String dihPath) {
+		this.dihDefaultPath = dihPath;
 	}
 }

@@ -10,13 +10,13 @@ public class Job {
 	private String dihPath;
 	private Integer maxWorkDurationSeconds;
 	
-	private JobEndState endState;
+	private JobState endState;
 	
 	public Job(String jobIdentifier, String dataSetIdentifier) {
-		this(jobIdentifier, dataSetIdentifier, null, null);
+		this(jobIdentifier, dataSetIdentifier, null, null, null);
 	}
 	
-	public Job(String jobIdentifier, String dataSetIdentifier, Integer pollIntervalSeconds, String dihPath) {
+	public Job(String jobIdentifier, String dataSetIdentifier, String dihPath, Integer pollIntervalSeconds, Integer maxWorkDurationSeconds) {
 		
 		if(jobIdentifier == null || jobIdentifier.length() == 0)
 			throw new IllegalArgumentException("Attribute jobIdentifier must not be null in constructor");
@@ -26,8 +26,10 @@ public class Job {
 		
 		this.jobIdentifier = jobIdentifier;
 		this.dataSetIdentifier = dataSetIdentifier;
-		this.pollIntervalSeconds = pollIntervalSeconds;
+		
 		this.dihPath = dihPath;
+		this.pollIntervalSeconds = pollIntervalSeconds;
+		this.maxWorkDurationSeconds = maxWorkDurationSeconds;
 	}
 	
 	public Integer getMaxWorkDurationSeconds() {
@@ -70,11 +72,11 @@ public class Job {
 		this.dihPath = dihPath;
 	}
 	
-	public JobEndState getEndState() {
+	public JobState getEndState() {
 		return endState;
 	}
 
-	public void setEndState(JobEndState endState) {
+	public void setEndState(JobState endState) {
 		this.endState = endState;
 	}
 
@@ -83,9 +85,9 @@ public class Job {
 		String repr = null;
 		
 		if(endState == null)
-			repr = MessageFormat.format("Job [id:{0}, ds:{1}]", jobIdentifier, dataSetIdentifier);
+			repr = MessageFormat.format("Job (id:{0}, ds:{1})", jobIdentifier, dataSetIdentifier);
 		else
-			repr = MessageFormat.format("Job [id:{0}, ds:{1}, ended:{2}]", jobIdentifier, dataSetIdentifier, endState);
+			repr = MessageFormat.format("Job (id:{0}, ds:{1}, ended:{2})", jobIdentifier, dataSetIdentifier, endState);
 		
 		return repr;
 	}
