@@ -16,6 +16,6 @@ fi
 docker run $PARA  \
     --name pgdev \
     -v $(pwd)/pg_initfiles:/docker-entrypoint-initdb.d \
-    -p 5432:5432 \
+    -p 5433:5432 \
     --rm \
     mdillon/postgis:9.6

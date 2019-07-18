@@ -10,11 +10,23 @@ Further documentation in german...
 
 ## Zusammenfassung
 
-Uebersetzung der obenstehenden einleitenden Sätze:
-Der indexupdater ist ein http-Service, welcher das neu Laden aller Dokumente einer "entity" koordiniert. Zuerst werden alle Dokumente einer entity gelöscht. Anschliessend werden die Dokumente mittels DataImportHandler (DIH) neu geladen. 
+Uebersetzung der obenstehenden einleitenden englischen Kapitels:
+
+Der Indexupdater ist ein http-Service, welcher das neu Laden aller Dokumente einer "entity" koordiniert. Zuerst werden alle Dokumente einer entity gelöscht. Anschliessend werden die Dokumente mittels DataImportHandler (DIH) neu geladen. 
 
 Der Indexupdater besteht aus den folgenden beiden Hauptteilen:
 * "JobInput": Empfängt die http Job requests und legt die neuen jobs in eine Queue.
 * "Backgroundworker": Nimmt den jeweils ältesten Job aus der Queue und führt die Indexaktualisierung aus.
+
+## Installation
+
+Der Indexupdater wird als Docker-Image bereitgestellt: https://hub.docker.com/r/sogis/indexupdater
+
+Die Konfiguration erfolgt über die Umgebungsvariable SPRING_APPLICATION_JSON.
+
+Beispielkonfiguration:
+
+```json
+SPRING_APPLICATION_JSON='{"solrProtocol":"http","solrHost":"localhost","solrPort":8983,"solrPathQuery":"solr/gdi/select","solrPathUpdate":"solr/gdi/update","logSilenceMaxDurationSeconds":5,"dihPollIntervalSeconds":2,"dihImportMaxDurationSeconds":120,"dihDefaultPath":"solr/gdi/dih"}'
 
 

@@ -1,5 +1,5 @@
 <dataConfig>
-    <dataSource driver="org.postgresql.Driver" url="jdbc:postgresql://localhost/postgres" user="postgres" password="admin1234" />
+    <dataSource driver="org.postgresql.Driver" url="jdbc:postgresql://localhost:5433/postgres" user="postgres" password="admin1234" />
     <document>
         <entity name="ch_so_agi_fill_0_1k" query="SELECT * FROM public.solr_index_fill_0_1k_v">        
             <field column="search_1_stem" name="search_1_stem" />
