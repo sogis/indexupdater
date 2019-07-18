@@ -35,23 +35,29 @@ task copyJar(type: Copy, dependsOn: build){
     into file("$projectDir/img_build/tmp")
 }
 
-task startDb(type:Exec) {
+task removeDb(type:Exec) {
+ 	commandLine 'docker', 'rm', '-f', 'pgdev'
+ 	ignoreExitValue true
+}
+
+task startDb(type:Exec, dependsOn:removeDb) {
  	workingDir "$projectDir/src/intTest/resources/sourcedb"
  	commandLine './run_image.sh', 'bg'
 }
 
-task startSolr(type:Exec) {
+task removeSolr(type:Exec) {
+ 	commandLine 'docker', 'rm', '-f', 'solr'
+ 	ignoreExitValue true
+}
+
+task startSolr(type:Exec, dependsOn:removeSolr) {
  	workingDir "$projectDir/src/intTest/resources/solr"
  	commandLine './run_image.sh'
 }
 
 task startEnv(){
-	//dependsOn startDb
-	//dependsOn startSolr	
-	
-	doLast {
-        sleep(5000)
-    }
+	dependsOn startDb
+	dependsOn startSolr	
 }
 
 task buildImage(type:Exec, dependsOn: copyJar) {
@@ -79,12 +85,15 @@ task tagImage(type:Exec, dependsOn: buildImage) {
 				"sogis/indexupdater:latest"
 }
 
-task runImage(type:Exec, dependsOn: tagImage){
+task runImage(type:Exec){
  	workingDir "$projectDir/img_build"
  	commandLine './run_image.sh', 'bg'
  	
- 	doLast {
-        sleep(5000)
+ 	dependsOn tagImage
+ 	dependsOn startEnv
+ 	
+ 	doLast { 	
+        sleep(10000)
     }
 }
 
@@ -96,12 +105,10 @@ task intTest(type: Test) {
     classpath = sourceSets.intTest.runtimeClasspath
     shouldRunAfter test
     
-    mustRunAfter startEnv
     mustRunAfter runImage
 }
 
 task testImage(){
-	dependsOn startEnv
 	dependsOn runImage
 	dependsOn intTest	
 }

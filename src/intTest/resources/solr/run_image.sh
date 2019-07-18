@@ -2,7 +2,7 @@
 # The indexed data will NOT be placed on a persistent volume --> Must be reindexed when a container is (re)started
 
 
-docker run \
+docker run -d \
 	--name solr \
 	--network=host \
 	-P -d \

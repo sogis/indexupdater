@@ -8,44 +8,11 @@ services:
 branches:
   only:
     - master
-    - stable
 
 install: true
-
-before_script:
-    - cd $TRAVIS_BUILD_DIR/src/intTest/resources/solr
-    - ./run_image.sh
-    - cd $TRAVIS_BUILD_DIR/src/intTest/resources/sourcedb
-    - ./run_image.sh
   
 script:
-  - cd $TRAVIS_BUILD_DIR
-  - ./gradlew tagImage
-  - cd $TRAVIS_BUILD_DIR/img_build
-  - ./run_image
-  - sleep 10
-  
-  
-  - gradle -Pgretltest_dburi_pg=jdbc:postgresql:gretl --project-dir gretl/inttest testJar
-  - cd runtimeImage/
-  - ./build-gretl.sh $TRAVIS_COMMIT $TRAVIS_BUILD_NUMBER
-  - cd ..
-  - tooling/start-test-database-ora.sh background
-  - gradle -Pgretltest_dburi_pg=jdbc:postgresql:gretl -Pgretltest_dburi_ora=jdbc:oracle:thin:@localhost:1521:xe --project-dir gretl/inttest testImage
-
-deploy:
-  - provider: script
-    skip_cleanup: true
-    script: gradle -Drepos_url=${repos_url} -Drepos_pwd=${repos_pwd} -Drepos_usr=${repos_usr} gretl:publishMavenJavaPublicationToPublicRepository
-    on:
-      branch: master
-  - provider: script
-    skip_cleanup: true
-    script: gradle -Drepos_url=${repos_url} -Drepos_pwd=${repos_pwd} -Drepos_usr=${repos_usr} -Drelease=final gretl:publishMavenJavaPublicationToPublicRepository
-    on:
-      branch: stable
-  - provider: script
-    skip_cleanup: true
-    script: runtimeImage/push-gretl.sh $dockerhub_pwd
-    on:
-      branch: master
+  - ./gradlew testImage
+  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+  - docker push sogis/indexupdater:latest
+  - docker push sogis/indexupdater:$TRAVIS_BUILD_NUMBER
