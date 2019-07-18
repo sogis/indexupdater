@@ -17,5 +17,6 @@ install: true
 script:
   - ./gradlew testImage
   - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+  - docker image ls
   - docker push sogis/indexupdater:latest
-  - docker push sogis/indexupdater:$TRAVIS_BUILD_NUMBER
+ # - docker push sogis/indexupdater:$TRAVIS_BUILD_NUMBER

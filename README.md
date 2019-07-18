@@ -20,7 +20,7 @@ Der Indexupdater besteht aus den folgenden beiden Hauptteilen:
 
 ## Installation
 
-Der Indexupdater wird als Docker-Image bereitgestellt: https://hub.docker.com/r/sogis/indexupdater
+Der Indexupdater wird als Docker-Image bereitgestellt: https://hub.docker.com/r/sogis/indexupdater. Der im Docker Image genutzte Webserver startet auf Port 8080. 
 
 Die Konfiguration erfolgt über die Umgebungsvariable SPRING\_APPLICATION\_JSON. Parameter:
 * solrProtocol: http oder https
@@ -41,10 +41,58 @@ SPRING_APPLICATION_JSON='{"solrProtocol":"http","solrHost":"localhost","solrPort
 
 ## Benutzung / API-Dokumentation
 
-Der Indexupdater wird ausschliesslich über HTTP-GET-Aufrufe genutzt. Es stehen die Pfade /update und /status zur Verfügung. /update für die Beauftragung eines neuen Aktualisierungsjobs, /status für die Abfrage des Status eines jobs, respektive für Abfrage des Zustands des Indexupdaters als ganzes.
+Der Indexupdater wird ausschliesslich über HTTP-GET-Aufrufe genutzt. Es stehen die Pfade /update und /status zur Verfügung. /update für die Beauftragung eines neuen Aktualisierungsjobs, /status für die Abfrage des Status eines jobs, respektive für die Abfrage des Zustands des Indexupdaters als ganzes.
+
+### Pfad /queue
+
+Ein GET auf den Pfad /queue mit korrekten URL-Parametern erstellt einen neuen Aktualisierungsjob. Im Body der Response wird der Job-Identifier zurückgegeben.
+
+Beispiel-Aufruf:
+
+``` http
+http://localhost:8080/queue?ds=ch.so.agi.fill_10k_60k&timeout=3
+```
+
+#### Zwingende Parameter
+* ds: Identifier des datasets (der entity), für welche der Index neu geladen werden soll.
+
+#### Optionale Parameter
+
+Uebergebene optionale Parameter überschreiben jeweils den bei der Installation mittels Umgebungsvariable SPRING\_APPLICATION\_JSON gesetzten Wert.
+* dih: Pfad des zu verwendenden Dataimporthandlers. Siehe auch Kapitel Installation, dihDefaultPath.
+* poll: Siehe Kapitel Installation, dihPollIntervalSeconds
+* timeout: Siehe Kapitel Installation, dihPollIntervalSeconds
 
 
-### Pendent
-Fertigstellung Benutzerdoku / Entwicklungsdokumentation
+### Pfad /status
+
+Gibt eine menschenlesbare Antwort zum Status des ganzen Indexupdaters zurück.
+
+### Pfad /status/{job identifier}
+
+Gibt eine maschinen- und menschenlesbare Antwort zum Status des angefragten Jobs zurück.
+
+Antwort-Codes in der Response (HTTP Status-Code 200):
+* PENDING: Job ist beauftragt und wartet in der Queue auf die Bearbeitung. 
+* WORKING: Job wird von Solr gegenwärtig ausgeführt.
+* ENDED_OK: Job wurde erfolgreich abgeschlossen.
+* ENDED_ABORTED: Job wurde wegen Timeout-Ueberschreitung abgebrochen. Index kann bezüglich des betroffenen Datasets inkonsistent sein.
+* ENDED_EXCEPTION: Job wurde aufgrund des Auftretens eines Fehlers abgebrochen. Index kann bezüglich des betroffenen Datasets inkonsistent sein.
+
+Bei der Uebergabe eines unbekannten Job-Identifiers wird HTTP Status-Code 404 "not found" zurückgegeben. Der Indexupdater merkt sich lediglich die letzten 20 ausgeführten Jobs. 
+
+Beispiel-Aufruf:
+
+```
+http://localhost:8080/status/yP
+```
+
+#### Hinweis zum Job-Identifier
+
+Zentral in der Benutzung des API's sind die sogenannten Job-Identifier. Diese werden automatisch erzeugt mit den Anforderungen "kurz, gut lesbar und eindeutig". Garantiert eindeutig sind sie jeweils in einer Periode von 7 Tagen. Ueber längere Perioden können Duplikate nicht ausgeschlossen werden.
+
+In der Praxis ist diese Rahmenbedingung kaum relevant, da immer der jüngste auf den Identifier passende Job zurückgegeben wird. 
+
+Dokumentations-Pendenzen: Entwicklungsdokumentation
 
 
