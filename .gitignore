@@ -1,5 +1,4 @@
-# Do not add any files from folders bin, build, tmp, gradle
+# Do not add any files from folders bin, build, tmp
 **/bin
 **/build
 **/tmp
-**/gradle
