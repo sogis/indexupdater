@@ -50,11 +50,12 @@ Ein GET auf den Pfad /queue mit korrekten URL-Parametern erstellt einen neuen Ak
 Beispiel-Aufruf:
 
 ``` http
-http://localhost:8080/queue?ds=ch.so.agi.fill_10k_60k&timeout=3
+http://localhost:8080/queue?ds=ch.so.agi.fill_10k_60k,ch.so.agi.fill&timeout=3
 ```
 
 #### Zwingende Parameter
-* ds: Identifier des datasets (der entity), für welche der Index neu geladen werden soll.
+* ds: Identifier des/der dataset(s), für welche der Index neu geladen werden soll. Bei der Uebergabe mehrerer Datasets werden diese mit Komma getrennt.
+
 
 #### Optionale Parameter
 
