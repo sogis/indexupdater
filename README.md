@@ -61,7 +61,7 @@ http://localhost:8080/queue?ds=ch.so.agi.fill_10k_60k&timeout=3
 Uebergebene optionale Parameter überschreiben jeweils den bei der Installation mittels Umgebungsvariable SPRING\_APPLICATION\_JSON gesetzten Wert.
 * dih: Pfad des zu verwendenden Dataimporthandlers. Siehe auch Kapitel Installation, dihDefaultPath.
 * poll: Siehe Kapitel Installation, dihPollIntervalSeconds
-* timeout: Siehe Kapitel Installation, dihPollIntervalSeconds
+* timeout: Siehe Kapitel Installation, dihImportMaxDurationSeconds
 
 
 ### Pfad /status

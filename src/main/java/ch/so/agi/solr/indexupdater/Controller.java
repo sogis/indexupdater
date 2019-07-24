@@ -2,6 +2,7 @@ package ch.so.agi.solr.indexupdater;
 
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,35 +22,30 @@ public class Controller {
 
     @RequestMapping("/queue")
     public String addJobToQueue(
-    		@RequestParam(value="ds") String dataset,
+    		@RequestParam(value="ds") String[] datasets,
     		@RequestParam(value="dih", required=false) String dihPath,
     		@RequestParam(value="poll", required=false) Integer pollIntervalSeconds,
     		@RequestParam(value="timeout", required=false) Integer timeoutSeconds){
     	
-    	assertParamPresent(dataset);     	
-    	String jobId = IdentifierForCurrentTime.generate();
+    	ArrayList<Job> requestedJobs = new ArrayList<>();
     	
+    	for (String ds : datasets) {
+        	String jobId = IdentifierForCurrentTime.generate();
+        	
+        	Job j = new Job(
+        			jobId, 
+        			ds,
+        			dihPath,
+        			pollIntervalSeconds,
+        			timeoutSeconds
+        			);
+        	
+        	QueueOfJobs.add(j);
+        	requestedJobs.add(j);
+    	}
     	
-    	Job j = new Job(
-    			jobId, 
-    			dataset,
-    			dihPath,
-    			pollIntervalSeconds,
-    			timeoutSeconds
-    			);
-    	
-    	QueueOfJobs.add(j);
-    	
-    	return jobId;
+    	return requestedJobs.toString();
     }  
-    
-    private static void assertParamPresent(String param) {
-    	if (param == null || param.length() == 0)
-    		throw new ResponseStatusException(
-    				HttpStatus.BAD_REQUEST, 
-    				"Parameter ds is missing. Specifying the dataset to queue is mandatory"
-    				);
-    }
     
     /*
      * Returns the state of all known jobs.

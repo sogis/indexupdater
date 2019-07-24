@@ -62,7 +62,7 @@ task startEnv(){
 
 task buildImage(type:Exec, dependsOn: copyJar) {
 	def githash = getCheckedOutGitCommitHash()
-	def buildident = System.getProperty('TRAVIS_BUILD_NUMBER','localbuild')
+	def buildident = getTravisBuildNumber()
 	def build_timestamp = getTimestamp()
 
 
@@ -78,7 +78,7 @@ task buildImage(type:Exec, dependsOn: copyJar) {
 
 
 task tagImage(type:Exec, dependsOn: buildImage) {
-	def buildident = System.getProperty('TRAVIS_BUILD_NUMBER','localbuild')
+	def buildident = getTravisBuildNumber()
 	
  	commandLine 'docker', 'tag', 
 				"sogis/indexupdater:$buildident",
@@ -111,6 +111,15 @@ task intTest(type: Test) {
 task testImage(){
 	dependsOn runImage
 	dependsOn intTest	
+}
+
+String getTravisBuildNumber() {
+	String val = System.getenv('TRAVIS_BUILD_NUMBER')
+	
+	if(val == null)
+		val = 'localbuild'
+		
+	return val
 }
 
 def getCheckedOutGitCommitHash() {
