@@ -11,10 +11,10 @@ import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ch.so.agi.solr.indexupdater.jobexec.IndexSliceUpdater;
 import ch.so.agi.solr.indexupdater.model.Job;
 import ch.so.agi.solr.indexupdater.model.JobState;
 import ch.so.agi.solr.indexupdater.model.QueueOfJobs;
-import ch.so.agi.solr.indexupdater.util.IndexSliceUpdater;
 import ch.so.agi.solr.indexupdater.util.Settings;
 
 @Component

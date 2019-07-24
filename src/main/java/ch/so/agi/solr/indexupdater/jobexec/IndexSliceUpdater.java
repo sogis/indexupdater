@@ -1,4 +1,4 @@
-package ch.so.agi.solr.indexupdater.util;
+package ch.so.agi.solr.indexupdater.jobexec;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ch.so.agi.solr.indexupdater.model.Job;
 import ch.so.agi.solr.indexupdater.model.JobState;
+import ch.so.agi.solr.indexupdater.util.Settings;
 
 /*
  * Handles the complete update of one entity / facet of a
@@ -27,26 +28,6 @@ import ch.so.agi.solr.indexupdater.model.JobState;
  * To alleviate, this class makes use of the index version,
  * which must be different after each manipulation of the
  * index.
- * 
- * Integration Tests:
- * - Update of slice that had documents
- * - Update of slice that had no documents
- * --> Poll until job is gone
- * 
- * 
- * - aborting job
- * --> abort long running job after 1 minute
- * 
- * - Call with wrong datasetname
- * --> needs keeping the past x jobs in memory to get if the state was successful
- * 
- * - job chain: success success
- * - job chain: error success
- * 
- * - count mismatch between view result and index sum
- * --> needs view returning null for mandatory field
- * 
- * 
  */
 public class IndexSliceUpdater {		
     private static final Logger log = LoggerFactory.getLogger(IndexSliceUpdater.class);

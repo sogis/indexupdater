@@ -64,6 +64,9 @@ Uebergebene optionale Parameter überschreiben jeweils den bei der Installation 
 * poll: Siehe Kapitel Installation, dihPollIntervalSeconds
 * timeout: Siehe Kapitel Installation, dihImportMaxDurationSeconds
 
+#### Antwort
+
+Gibt eine Textrepresentation des/der beauftragten Job's zurück.
 
 ### Pfad /status
 
@@ -94,6 +97,25 @@ Zentral in der Benutzung des API's sind die sogenannten Job-Identifier. Diese we
 
 In der Praxis ist diese Rahmenbedingung kaum relevant, da immer der jüngste auf den Identifier passende Job zurückgegeben wird. 
 
-Dokumentations-Pendenzen: Entwicklungsdokumentation
+## Entwicklerdokumentation
+
+Das Programm umfasst drei Hauptteile:
+* Mittels **ch.so.agi.solr.indexupdater.Controller.addJobToQueue(...)** werden neue Jobs in die Queue gelegt.
+* Im Package ch.so.agi.solr.indexupdater.model ist der State der hängigen, laufenden, und abgeschlossenen Jobs hinterlegt. Die **QueueOfJobs** ist die zentrale Collection, in welche addJobToQueue(...) neue Jobs reinlegt.
+* Mittels **ch.so.agi.solr.indexupdater.QueuePoller.runOnePoll()** wird von einem von Spring verwalteten Background-Prozess periodisch die Queue auf neu zu verarbeitende Jobs abgefragt. Wenn welche vorhanden sind, wird der älteste wartende Job gezogen und bearbeitet.
+
+### Job-Verarbeitung
+
+Die Job-Verarbeitung umfasst die folgenden Schritte
+* Alle Dokumente der entsprechenden entity aus dem Index löschen. Verwendet das Solr [index path]/update API.
+* Die Dokumente der entity neu aus der Datenbank laden. Verwendet den DataImportHandler (DIH)
+* Ob die Schritte korrekt abgelaufen sind wird mittels Zählen der Dokumente vor und nach jedem Schritt sichergestellt. Verwendet das Solr [index path]/select API
+
+Die Verarbeitung wird von den Klassen des package **ch.so.agi.solr.indexupdater.jobexec** verrichtet. Hauptsächlich durch:
+* **IndexSliceUpdater**: Umfasst den Code für das Update einer entity gemäss den obig beschriebenen Schritten. Siehe IndexSliceUpdater.execute()
+* **DihPoller**: Fragt Solr periodisch nach dem Zustand des laufenden Import-Prozesses. Wird von IndexSliceUpdater aufgerufen.
+
+
+
 
 

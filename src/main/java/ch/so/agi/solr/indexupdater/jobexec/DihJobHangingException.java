@@ -1,4 +1,4 @@
-package ch.so.agi.solr.indexupdater.util;
+package ch.so.agi.solr.indexupdater.jobexec;
 
 /*
  * Thrown when all abort calls to solr from this monitoring

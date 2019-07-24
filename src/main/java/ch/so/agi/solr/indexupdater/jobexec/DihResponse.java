@@ -1,4 +1,4 @@
-package ch.so.agi.solr.indexupdater.util;
+package ch.so.agi.solr.indexupdater.jobexec;
 
 import java.util.Set;
 import java.text.MessageFormat;
