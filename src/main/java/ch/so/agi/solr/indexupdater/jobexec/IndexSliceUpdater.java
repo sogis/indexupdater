@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import ch.so.agi.solr.indexupdater.model.Job;
 import ch.so.agi.solr.indexupdater.model.JobState;
 import ch.so.agi.solr.indexupdater.util.Settings;
+import ch.so.agi.solr.indexupdater.util.Util;
 
 /*
  * Handles the complete update of one entity / facet of a

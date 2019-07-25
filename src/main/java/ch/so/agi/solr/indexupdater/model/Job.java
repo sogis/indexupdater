@@ -79,15 +79,29 @@ public class Job {
 	public void setEndState(JobState endState) {
 		this.endState = endState;
 	}
+	
+	public String toStringVerbose() {
+		String repr = MessageFormat.format(
+				"{0}: (ds:{1}, state:{2}, dih:{3}, timeout [s]: {4}, poll [s]: {5})", 
+				jobIdentifier, 
+				dataSetIdentifier,
+				endState,
+				dihPath,
+				maxWorkDurationSeconds,
+				pollIntervalSeconds
+				);
+
+		return repr;
+	}
 
 	@Override
 	public String toString() {
 		String repr = null;
 		
 		if(endState == null)
-			repr = MessageFormat.format("Job (id:{0}, ds:{1})", jobIdentifier, dataSetIdentifier);
+			repr = MessageFormat.format("{0}: {1}", jobIdentifier, dataSetIdentifier);
 		else
-			repr = MessageFormat.format("Job (id:{0}, ds:{1}, ended:{2})", jobIdentifier, dataSetIdentifier, endState);
+			repr = MessageFormat.format("{0}: (ds:{1}, state:{2})", jobIdentifier, dataSetIdentifier, endState);
 		
 		return repr;
 	}

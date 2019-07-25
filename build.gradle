@@ -35,24 +35,29 @@ task copyJar(type: Copy, dependsOn: build){
     into file("$projectDir/img_build/tmp")
 }
 
-task removeDb(type:Exec) {
+task stopDb(type:Exec) {
  	commandLine 'docker', 'rm', '-f', 'pgdev'
  	ignoreExitValue true
 }
 
-task startDb(type:Exec, dependsOn:removeDb) {
+task startDb(type:Exec, dependsOn:stopDb) {
  	workingDir "$projectDir/src/intTest/resources/sourcedb"
  	commandLine './run_image.sh', 'bg'
 }
 
-task removeSolr(type:Exec) {
+task stopSolr(type:Exec) {
  	commandLine 'docker', 'rm', '-f', 'solr'
  	ignoreExitValue true
 }
 
-task startSolr(type:Exec, dependsOn:removeSolr) {
+task startSolr(type:Exec, dependsOn:stopSolr) {
  	workingDir "$projectDir/src/intTest/resources/solr"
  	commandLine './run_image.sh'
+}
+
+task stopEnv(){
+	dependsOn startDb
+	dependsOn startSolr	
 }
 
 task startEnv(){

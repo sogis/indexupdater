@@ -45,7 +45,7 @@ Der Indexupdater wird ausschliesslich über HTTP-GET-Aufrufe genutzt. Es stehen 
 
 ### Pfad /queue
 
-Ein GET auf den Pfad /queue mit korrekten URL-Parametern erstellt einen neuen Aktualisierungsjob. Im Body der Response wird der Job-Identifier zurückgegeben.
+Ein GET auf den Pfad /queue mit korrekten URL-Parametern erstellt die Aktualisierungsjobs für die übergebenen entity's (Tabellen / Views). Pro übergebener entity wird ein Job in die Queue gelegt und anschliessend abgearbeitet.
 
 Beispiel-Aufruf:
 
@@ -66,7 +66,7 @@ Uebergebene optionale Parameter überschreiben jeweils den bei der Installation 
 
 #### Antwort
 
-Gibt eine Textrepresentation des/der beauftragten Job's zurück.
+Json-Array der Identifier der erstellten Jobs.
 
 ### Pfad /status
 

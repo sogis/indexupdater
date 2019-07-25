@@ -92,7 +92,7 @@ public class QueuePoller {
     		if(setDihPath)
     			parts.add("Poll interval");
     		
-    		log.info("{}: Set default(s) {} for job. Job config is {}", job.getJobIdentifier(), parts, job);
+    		log.info("{}: Set default(s) {} for job. Job config is {}", job.getJobIdentifier(), parts, job.toStringVerbose());
     	}
     }
     

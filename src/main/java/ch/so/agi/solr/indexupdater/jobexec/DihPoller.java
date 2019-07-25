@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 import ch.so.agi.solr.indexupdater.model.Job;
 import ch.so.agi.solr.indexupdater.model.JobState;
+import ch.so.agi.solr.indexupdater.util.Util;
 
 /*
  * Polls solr for the state of the currently

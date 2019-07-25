@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import ch.so.agi.solr.indexupdater.model.Job;
 import ch.so.agi.solr.indexupdater.model.QueueOfJobs;
 import ch.so.agi.solr.indexupdater.util.IdentifierForCurrentTime;
@@ -18,6 +21,8 @@ import ch.so.agi.solr.indexupdater.util.IdentifierForCurrentTime;
 
 @RestController
 public class Controller {
+	
+	private ObjectMapper mapper = new ObjectMapper();
 	
 
     @RequestMapping("/queue")
@@ -27,7 +32,8 @@ public class Controller {
     		@RequestParam(value="poll", required=false) Integer pollIntervalSeconds,
     		@RequestParam(value="timeout", required=false) Integer timeoutSeconds){
     	
-    	ArrayList<Job> requestedJobs = new ArrayList<>();
+    	
+    	ArrayList<String> ids = new ArrayList<>();
     	
     	for (String ds : datasets) {
         	String jobId = IdentifierForCurrentTime.generate();
@@ -41,11 +47,23 @@ public class Controller {
         			);
         	
         	QueueOfJobs.add(j);
-        	requestedJobs.add(j);
+        	ids.add(j.getJobIdentifier());
     	}
     	
-    	return requestedJobs.toString();
+    	
+    	String jsonArray = null;
+    	
+    	try {
+    		jsonArray = mapper.writeValueAsString(ids);
+    	}
+    	catch(JsonProcessingException je) {
+    		throw new RuntimeException(je);
+    	}    	
+    	
+    	return jsonArray;
     }  
+    
+    
     
     /*
      * Returns the state of all known jobs.

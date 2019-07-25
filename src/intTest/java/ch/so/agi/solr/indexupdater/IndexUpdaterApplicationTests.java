@@ -1,5 +1,6 @@
 package ch.so.agi.solr.indexupdater;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.text.MessageFormat;
@@ -8,6 +9,10 @@ import java.time.LocalDateTime;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ch.so.agi.solr.indexupdater.model.JobState;
 import ch.so.agi.solr.indexupdater.util.BaseAddress;
@@ -23,6 +28,8 @@ public class IndexUpdaterApplicationTests {
 	private static final String PATH_QUEUE = "queue";
 	private static final String PATH_STATUS = "status";
 	
+	private ObjectMapper mapper = new ObjectMapper();
+	
 	@Test
 	public void UpdateSlice_OK_WhenUsingAllParams() {
 		String[] qPara = new String[] {
@@ -36,10 +43,10 @@ public class IndexUpdaterApplicationTests {
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
+		String[] arr = jsonToArray(jobIdent);
 		
-		pollForEndState(jobIdent, JobState.ENDED_OK);
+		pollForEndState(arr[0], JobState.ENDED_OK);
 	}
-
 
 	@Test
     public void UpdateSlice_WithNoPreviousDocs_OK() {
@@ -49,24 +56,23 @@ public class IndexUpdaterApplicationTests {
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
+		String[] arr = jsonToArray(jobIdent);
 		
-		pollForEndState(jobIdent, JobState.ENDED_OK);		
+		pollForEndState(arr[0], JobState.ENDED_OK);		
 	}
 	
 	@Test
 	public void UpdateSlice_WithPreviousDocs_OK() {
 		
-		String[] qPara = new String[] {"ds", "ch.so.agi.fill_0_1k"};
+		String[] qPara = new String[] {"ds", "ch.so.agi.fill_0_1k,ch.so.agi.fill_0_1k"};
 		
 		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
-		Util.sendBare(req, null); //This makes sure that Doc's will exist in Index
-		Util.sleep(100);
+		String jobIdent =  Util.sendBare(req, null).body();
+		String[] arr = jsonToArray(jobIdent);
 		
-		String secondJobIdent =  Util.sendBare(req, null).body();
-		
-		pollForEndState(secondJobIdent, JobState.ENDED_OK);
+		pollForEndState(arr[1], JobState.ENDED_OK);
 	}
 	
 	@Test
@@ -82,8 +88,9 @@ public class IndexUpdaterApplicationTests {
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
+		String[] arr = jsonToArray(jobIdent);
 		
-		pollForEndState(jobIdent, JobState.ENDED_ABORTED);
+		pollForEndState(arr[0], JobState.ENDED_ABORTED);
 	}
 	
 	@Test
@@ -94,8 +101,9 @@ public class IndexUpdaterApplicationTests {
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
+		String[] arr = jsonToArray(jobIdent);
 		
-		pollForEndState(jobIdent, JobState.ENDED_EXCEPTION);
+		pollForEndState(arr[0], JobState.ENDED_EXCEPTION);
 	}
 	
 	@Test
@@ -106,27 +114,36 @@ public class IndexUpdaterApplicationTests {
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
+		String[] arr = jsonToArray(jobIdent);
 		
-		pollForEndState(jobIdent, JobState.ENDED_EXCEPTION);
+		pollForEndState(arr[0], JobState.ENDED_EXCEPTION);
 	}
 	
 	@Test
-	public void JobChain_SuccesAfterError_OK() {
-		String[] qPara = new String[] {"ds", "gugus"};
+	public void JobChain_SuccesAfterError_OK() throws JsonParseException, JsonMappingException, IOException {
+		String[] qPara = new String[] {"ds", "gugus,ch.so.agi.fill_0_1k"};
 		
 		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
-		Util.sendBare(req, null).body();
-		Util.sleep(100);
+		String jobIdent = Util.sendBare(req, null).body();
+		String[] arr = jsonToArray(jobIdent);		
 		
-		String[] qPara2 = new String[] {"ds", "ch.so.agi.fill_0_1k"};
-		URI url2 = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara2);
-		HttpRequest req2 = HttpRequest.newBuilder(url2).build();
+		pollForEndState(arr[1], JobState.ENDED_OK);
+	}
+	
+	private String[] jsonToArray(String jsonString) {
 		
-		String jobIdent = Util.sendBare(req2, null).body();
+		String[] res = null;
 		
-		pollForEndState(jobIdent, JobState.ENDED_OK);
+		try{
+			res = mapper.readValue(jsonString, String[].class);
+		}
+		catch(Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+		return res;
 	}
 	
 	private static void pollForEndState(String jobIdent, JobState state) {
