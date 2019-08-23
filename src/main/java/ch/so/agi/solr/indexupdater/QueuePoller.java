@@ -50,9 +50,6 @@ public class QueuePoller {
     	try {
         	IndexSliceUpdater updater = new IndexSliceUpdater(working);
         	updater.execute();
-        	
-        	if( !(working.getEndState() == JobState.ENDED_ABORTED) )
-        		working.setEndState(JobState.ENDED_OK);
     	}
     	catch(Exception e) {
     		working.setEndState(JobState.ENDED_EXCEPTION);

@@ -24,11 +24,6 @@ import ch.so.agi.solr.indexupdater.util.Util;
  * Updates are made by first deleting all documents of the
  * given facet and subsequently loading the documents from
  * the source db using the dataimporthandler.
- * For part of the Solr API, the responses give no indication
- * of whether a request was understood by Solr or not.
- * To alleviate, this class makes use of the index version,
- * which must be different after each manipulation of the
- * index.
  */
 public class IndexSliceUpdater {		
     private static final Logger log = LoggerFactory.getLogger(IndexSliceUpdater.class);
@@ -69,7 +64,7 @@ public class IndexSliceUpdater {
 		HttpRequest req = HttpRequest.newBuilder(url).GET().build();	
 		HttpResponse<String> response = Util.sendBare(req, job.getJobIdentifier());
 
-		assert200(response, url);
+		Util.assert200(response, url, job.getJobIdentifier());
 		
 		JsonNode root = parseToNodes(response.body());
 		JsonNode countArray = root.path("facet_counts").path("facet_fields").path("facet");
@@ -109,55 +104,15 @@ public class IndexSliceUpdater {
 		return res;
 	}
 	
-	private void assert200(HttpResponse<String> response, URI url) {
-		if(response == null) {
-			String msg = MessageFormat.format("{0}: Got null response for request {1}", job.getJobIdentifier(), url);
-			log.error(msg);
-			throw new RuntimeException(msg);
-		}
-		
-		if(response.statusCode() != 200) {
-			String msg = MessageFormat.format(
-					"{0}: Got status code {1} for request {2}",
-					job.getJobIdentifier(),
-					response.statusCode(), 
-					url);
-			
-			log.error(msg);
-			throw new RuntimeException(msg);
-		}
-	}
-	
 	public void execute() {
 		deleteAllDocsInFacet();
 		assertAfterDeleteCount();
-		startImport();
 		
-		DihPoller poller = new DihPoller(job);
-		poller.execute();
+		DataImportSuperviser importer = new DataImportSuperviser(job);
+		importer.execute();
 		
-		int countAtPollEnd = poller.getNumProcessedDocs();
-		
-		if(job.getEndState() != JobState.ENDED_ABORTED)
-			assertAfterInsertCount(countAtPollEnd);
-	}
-	
-	private void assertAfterInsertCount(int curCount) {
-		
-		if ( !(curCount > this.lastDocCount) ) {
-			String msg = MessageFormat.format(
-					"{0}: Insert request failed. Still got {1} documents in index for dataset {2} (as before delete operation).)", 
-					job.getJobIdentifier(),
-					curCount,
-					job.getDataSetIdentifier()
-					);
-			
-			log.error(msg);					
-			throw new RuntimeException(msg);
-		}
-		else {
-			this.lastDocCount = curCount;
-		}		
+		JobState endState = importer.determineEndState();		
+		job.setEndState(endState);
 	}
 	
 	private void assertAfterDeleteCount() {
@@ -207,34 +162,13 @@ public class IndexSliceUpdater {
 				.build();
 		
 		HttpResponse<String> resp = Util.sendBare(req, job.getJobIdentifier());
-		assert200(resp, url);
+		Util.assert200(resp, url, job.getJobIdentifier());
 		
 		Util.sleep(commitPeriodMillis);
 		
 		log.info("{}: Sent delete request. body: {}. url: {}.", 
 				job.getJobIdentifier(),
 				root,
-				url);
-	}
-	
-
-	private void startImport() {
-		
-		String[] qParams = new String[] {
-				"command", "full-import",
-				"entity", job.getDsIdentAsEntityName(),
-				"clean", "false"
-		};
-		
-		URI url = Util.buildSolrUrl(job.getDihPath(), qParams);
-		
-		HttpRequest req = HttpRequest.newBuilder(url).build();
-		HttpResponse<String> res = Util.sendBare(req, job.getJobIdentifier());
-		
-		assert200(res, url);
-		
-		log.info("{}: Sent insert request with url: {}.", 
-				job.getJobIdentifier(),
 				url);
 	}
 }

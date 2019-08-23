@@ -45,6 +45,16 @@ public class DihResponse {
 			this.docs_skipped = 0;
 	}
 	
+	/*
+	 * False if dih is busy
+	 */
+	public boolean isDihIdle() {
+		return STATUS_IDLE.equalsIgnoreCase(status);
+	}	
+	
+	/*
+	 * Only here to map json to java via jackson
+	 */
 	public String getStatus() {
 		return status;
 	}
@@ -61,7 +71,7 @@ public class DihResponse {
 	public int getDocs_processed() {
 		return docs_processed;
 	}
-
+	
 	public int getDocs_skipped() {
 		return docs_skipped;
 	}

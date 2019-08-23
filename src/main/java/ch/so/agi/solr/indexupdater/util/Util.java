@@ -99,5 +99,24 @@ public class Util {
 		
 		return resp;
 	}
+	
+	public static void assert200(HttpResponse<String> response, URI url, String jobIdentifier) {
+		if(response == null) {
+			String msg = MessageFormat.format("{0}: Got null response for request {1}", jobIdentifier, url);
+			log.error(msg);
+			throw new RuntimeException(msg);
+		}
+		
+		if(response.statusCode() != 200) {
+			String msg = MessageFormat.format(
+					"{0}: Got status code {1} for request {2}",
+					jobIdentifier,
+					response.statusCode(), 
+					url);
+			
+			log.error(msg);
+			throw new RuntimeException(msg);
+		}
+	}
 
 }

@@ -91,7 +91,7 @@ public class IndexUpdaterApplicationTests {
 		String jobIdent =  Util.sendBare(req, null).body();
 		String[] arr = jsonToArray(jobIdent);
 		
-		pollForEndState(arr[0], JobState.ENDED_ABORTED);
+		pollForEndState(arr[0], JobState.ENDED_EXCEPTION);
 	}
 	
 	@Test
@@ -120,6 +120,7 @@ public class IndexUpdaterApplicationTests {
 		pollForEndState(arr[0], JobState.ENDED_EXCEPTION);
 	}
 	
+	/* Can not be tested, solr can not be asked if the dih was aborted
 	@Test
 	public void UpdateSlice_Exception_WhenSolrAbortsJob() {
 		
@@ -146,6 +147,7 @@ public class IndexUpdaterApplicationTests {
 		String[] arr = jsonToArray(jobIdent);		
 		pollForEndState(arr[0], JobState.ENDED_EXCEPTION);
 	}
+	*/
 	
 	@Test
 	public void JobChain_SuccesAfterError_OK() throws JsonParseException, JsonMappingException, IOException {
@@ -215,7 +217,6 @@ public class IndexUpdaterApplicationTests {
 	
 	private static boolean isEndState(String endStateName) {
 		JobState[] endStates = new JobState[] {
-				JobState.ENDED_ABORTED,
 				JobState.ENDED_EXCEPTION,
 				JobState.ENDED_OK
 				};
