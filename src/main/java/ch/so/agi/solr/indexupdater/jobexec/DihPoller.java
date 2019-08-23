@@ -27,6 +27,7 @@ public class DihPoller {
 	
 	private Job job;
 	private RestTemplate client;
+	private int docsProcessed;
 
 	public DihPoller(Job runningJob) {
 		this.job = runningJob; 
@@ -62,8 +63,12 @@ public class DihPoller {
 		assertDihIdle(state);		
 	}
 	
+	public int getNumProcessedDocs() {
+		return docsProcessed;
+	}
+	
 	private void assertDihIdle(PollState state) {
-		if(state != PollState.DIH_IDLE) {
+		if(state != PollState.DIH_JOB_ENDED) {
 			throw new IllegalStateException(MessageFormat.format(
 					"{0}: DIH must be in state {1} when ending poll for job", 
 					job.getJobIdentifier(),
@@ -77,15 +82,17 @@ public class DihPoller {
 		
 		DihResponse dihResponse = queryJobState();
 		
+		this.docsProcessed = dihResponse.getDocs_processed();
+		
 		if(dihResponse.getDocs_skipped() > 0) {
 			res = PollState.DIH_WORKING_SKIPPED_DOCS;
 		}
 		else if (DihResponse.STATUS_BUSY.equals(dihResponse.getStatus())) {
-			log.info("{}: Indexing... Processed {} documents.", job.getJobIdentifier(), dihResponse.getDocs_processed());
+			log.info("{}: Indexing... Processed {} documents.", job.getJobIdentifier(), docsProcessed);
 			res = PollState.DIH_WORKING_CLEAN;
 		}
 		else if(DihResponse.STATUS_IDLE.equals(dihResponse.getStatus())) {
-			res = PollState.DIH_IDLE;
+			res = PollState.DIH_JOB_ENDED;
 		}
 		else {
 			throw new IllegalStateException(MessageFormat.format(
@@ -132,7 +139,7 @@ public class DihPoller {
 		else {
 			log.info("{}: Succesfully aborted job. DIH is currently idle", job.getJobIdentifier());
 			job.setEndState(JobState.ENDED_ABORTED);
-			res = PollState.DIH_IDLE;
+			res = PollState.DIH_JOB_ENDED;
 		}
 		
 		return res;
@@ -217,6 +224,6 @@ public class DihPoller {
 }
 
 enum PollState {
-	DIH_WORKING_CLEAN, DIH_WORKING_SKIPPED_DOCS, TIMEOUT_EXCEEDED, DIH_IDLE 
+	DIH_WORKING_CLEAN, DIH_WORKING_SKIPPED_DOCS, TIMEOUT_EXCEEDED, DIH_JOB_ENDED 
 }
 	

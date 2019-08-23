@@ -23,7 +23,8 @@ public class IndexUpdaterApplicationTests {
 	
 	private static final Logger log = LoggerFactory.getLogger(IndexUpdaterApplicationTests.class);
 	
-	private static final BaseAddress ADDRESS = new BaseAddress("localhost", 8080);
+	private static final BaseAddress ADDRESS_IDX_UPDATER = new BaseAddress("localhost", 8080);
+	private static final BaseAddress ADDRESS_SOLR = new BaseAddress("localhost", 8983);
 	
 	private static final String PATH_QUEUE = "queue";
 	private static final String PATH_STATUS = "status";
@@ -39,7 +40,7 @@ public class IndexUpdaterApplicationTests {
 				"timeout", "180"
 				};
 		
-		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
@@ -52,7 +53,7 @@ public class IndexUpdaterApplicationTests {
     public void UpdateSlice_WithNoPreviousDocs_OK() {
 		String[] qPara = new String[] {"ds", "ch.so.agi.fill_2k_3k"};
 		
-		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
@@ -66,7 +67,7 @@ public class IndexUpdaterApplicationTests {
 		
 		String[] qPara = new String[] {"ds", "ch.so.agi.fill_0_1k,ch.so.agi.fill_0_1k"};
 		
-		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
@@ -84,7 +85,7 @@ public class IndexUpdaterApplicationTests {
 				"timeout", "2"
 				};
 		
-		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
@@ -97,7 +98,7 @@ public class IndexUpdaterApplicationTests {
 	public void UpdateSlice_Exception_WhenUsingWrongDatasetName() {
 		String[] qPara = new String[] {"ds", "gugus"};
 		
-		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
@@ -110,7 +111,7 @@ public class IndexUpdaterApplicationTests {
 	public void UpdateSlice_Exception_WhenHavingSkippedDocuments() {
 		String[] qPara = new String[] {"ds", "ch.so.agi.fill_faulty"};
 		
-		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent =  Util.sendBare(req, null).body();
@@ -120,10 +121,37 @@ public class IndexUpdaterApplicationTests {
 	}
 	
 	@Test
+	public void UpdateSlice_Exception_WhenSolrAbortsJob() {
+		
+		String[] qPara = new String[] {
+				"ds", "ch.so.agi.fill_10k_60k",
+				"poll", "1",
+				"timeout", "30"
+				};
+		
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
+		HttpRequest req = HttpRequest.newBuilder(url).build();
+		
+		String jobIdent =  Util.sendBare(req, null).body();
+		
+		Util.sleep(3000); //Make sure that Indexupdater had time to start DIH (Queue polling)
+		
+		String[] solrPara = new String[] {"command","abort"};
+		URI solrUrl = Util.buildUrl(ADDRESS_SOLR, "solr/gdi/dih", solrPara);
+		HttpRequest solrReq = HttpRequest.newBuilder(solrUrl).build();
+		
+		String abortRes = Util.sendBare(solrReq, null).body();
+		log.info("Response to Solr abort request {}", abortRes);
+			
+		String[] arr = jsonToArray(jobIdent);		
+		pollForEndState(arr[0], JobState.ENDED_EXCEPTION);
+	}
+	
+	@Test
 	public void JobChain_SuccesAfterError_OK() throws JsonParseException, JsonMappingException, IOException {
 		String[] qPara = new String[] {"ds", "gugus,ch.so.agi.fill_0_1k"};
 		
-		URI url = Util.buildUrl(ADDRESS, PATH_QUEUE, qPara);
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
 		String jobIdent = Util.sendBare(req, null).body();
@@ -158,7 +186,7 @@ public class IndexUpdaterApplicationTests {
 		while(LocalDateTime.now().isBefore(timeOutTime) && !endStateReached) {
 			Util.sleep(1000);
 			
-			URI url = Util.buildUrl(ADDRESS, PATH_STATUS, jobIdent);
+			URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_STATUS, jobIdent);
 			HttpRequest req = HttpRequest.newBuilder(url).build();
 			
 			lastResponse = Util.sendBare(req, jobIdent).body();	

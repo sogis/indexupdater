@@ -90,10 +90,16 @@ task tagImage(type:Exec, dependsOn: buildImage) {
 				"sogis/indexupdater:latest"
 }
 
+task stopContainer(type:Exec) {
+ 	commandLine 'docker', 'rm', '-f', 'indexupdater'
+ 	ignoreExitValue true
+}
+
 task runImage(type:Exec){
  	workingDir "$projectDir/img_build"
  	commandLine './run_image.sh', 'bg'
  	
+ 	dependsOn stopContainer
  	dependsOn tagImage
  	dependsOn startEnv
  	

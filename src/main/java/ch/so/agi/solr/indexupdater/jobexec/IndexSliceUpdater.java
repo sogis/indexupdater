@@ -135,13 +135,14 @@ public class IndexSliceUpdater {
 		
 		DihPoller poller = new DihPoller(job);
 		poller.execute();
-
+		
+		int countAtPollEnd = poller.getNumProcessedDocs();
+		
 		if(job.getEndState() != JobState.ENDED_ABORTED)
-			assertAfterInsertCount();
+			assertAfterInsertCount(countAtPollEnd);
 	}
 	
-	private void assertAfterInsertCount() {
-		int curCount = queryDocCount();
+	private void assertAfterInsertCount(int curCount) {
 		
 		if ( !(curCount > this.lastDocCount) ) {
 			String msg = MessageFormat.format(
