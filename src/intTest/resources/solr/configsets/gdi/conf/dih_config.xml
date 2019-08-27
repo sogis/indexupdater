@@ -36,7 +36,7 @@
             <field column="sort" name="sort" />
             <field column="display" name="display" />    
             <field column="idfield_meta" name="idfield_meta" />
-        </entity>     
+        </entity>
     </document>
 </dataConfig>
 

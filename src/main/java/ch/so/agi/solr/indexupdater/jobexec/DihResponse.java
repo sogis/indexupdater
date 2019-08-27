@@ -16,10 +16,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class DihResponse {
 	
 	private static Set<String>  STATUS_SET;
-	public static final String STATUS_IDLE = "idle";
-	public static final String STATUS_BUSY = "busy";
+	private static final String STATUS_IDLE = "idle";
+	private static final String STATUS_BUSY = "busy";
 
 	private String status;
+	private String jobStartTimestamp;
 	private int docs_processed;	
 	private int docs_skipped;
 	
@@ -43,6 +44,10 @@ public class DihResponse {
 			this.docs_skipped = Integer.parseInt(skipped);
 		else
 			this.docs_skipped = 0;
+		
+		String started = statusMessages.get("Full Dump Started");
+		if(started != null && started.length() > 0)
+			this.jobStartTimestamp = started;
 	}
 	
 	/*
@@ -51,13 +56,6 @@ public class DihResponse {
 	public boolean isDihIdle() {
 		return STATUS_IDLE.equalsIgnoreCase(status);
 	}	
-	
-	/*
-	 * Only here to map json to java via jackson
-	 */
-	public String getStatus() {
-		return status;
-	}
 
 	public void setStatus(String status) {		
 		if (!STATUS_SET.contains(status))
@@ -75,6 +73,10 @@ public class DihResponse {
 	public int getDocs_skipped() {
 		return docs_skipped;
 	}
+	
+	public String getJobStartTimestamp() {
+		return jobStartTimestamp;
+	}	
 
 	@Override
     public String toString() { 

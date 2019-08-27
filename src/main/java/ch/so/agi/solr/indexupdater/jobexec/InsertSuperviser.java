@@ -1,8 +1,6 @@
 package ch.so.agi.solr.indexupdater.jobexec;
 
 import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -20,12 +18,12 @@ import ch.so.agi.solr.indexupdater.model.JobState;
 import ch.so.agi.solr.indexupdater.util.Util;
 
 /*
- * Starts, monitors and ends (timeout) the data import
+ * Starts, monitors and ends (timeout) the data insert
  * through the Solr DataImportHandler
  */
-public class DataImportSuperviser {
+public class InsertSuperviser {
 	
-	private static final Logger log = LoggerFactory.getLogger(DataImportSuperviser.class);
+	private static final Logger log = LoggerFactory.getLogger(InsertSuperviser.class);
 	
 	private Job job;
 	private RestTemplate client;
@@ -33,7 +31,7 @@ public class DataImportSuperviser {
 	private DihResponse lastResponse;
 	private boolean dihTimedOut = false;
 
-	public DataImportSuperviser(Job runningJob) {
+	public InsertSuperviser(Job runningJob) {
 		this.job = runningJob; 
 		this.client = createConfiguredRestTemplate();
 	}
@@ -44,70 +42,106 @@ public class DataImportSuperviser {
 	 */
 	public void execute() {
 		
-		startImport();
+		this.lastResponse = startImport();
 		
 		LocalDateTime loopEndTime = LocalDateTime.now().plusSeconds(job.getMaxWorkDurationSeconds());
 		
-		boolean isWorkingClean = true;
-		while(isWorkingClean) {
+		boolean continuePoll = true;
+		while(continuePoll) {
 			Util.sleep(job.getPollIntervalSeconds() * 1000);
 			
 			if(LocalDateTime.now().isAfter(loopEndTime))
 				this.dihTimedOut = true;
 			
-			queryDihState();
+			DihResponse resp = callDih(new String[] {"command", "status"});
+
 			
-			isWorkingClean = dihWorkingClean();
+			continuePoll = continuePolling(resp);
 		}	
 		
 		if(dihTimedOut)
 			tryAbortImport();
 	}
 	
-	private void startImport() {
+	private DihResponse callDih(String[] params) {
 		
-		String[] qParams = new String[] {
+		URI url = Util.buildSolrUrl(
+				job.getDihPath(), 
+				params);
+		
+		log.debug("{}: Calling dih with url {}", job.getJobIdentifier(), url);
+		
+		DihResponse res = client.getForObject(url, DihResponse.class);
+		
+		if(res == null) {
+			String msg = MessageFormat.format(
+					"{0}: Query of insert status returned null. Url: {1}", 
+					job.getJobIdentifier(),
+					url
+					);
+			
+			log.error(msg);
+			throw new RuntimeException(msg);
+		}
+		
+		return res;
+	}
+	
+	private DihResponse startImport() {
+		
+		String[] insertParams = new String[] {
 				"command", "full-import",
 				"entity", job.getDsIdentAsEntityName(),
 				"clean", "false"
 		};
+			
+		callDih(insertParams); // Call to start import. Response does not contain information on the newly started import.
 		
-		URI url = Util.buildSolrUrl(job.getDihPath(), qParams);
+		Util.sleep(500);
 		
-		HttpRequest req = HttpRequest.newBuilder(url).build();
-		HttpResponse<String> res = Util.sendBare(req, job.getJobIdentifier());
+		String[] statusParams = new String[] {"command", "status"};
+		DihResponse res = callDih(statusParams);		
 		
-		Util.assert200(res, url, job.getJobIdentifier());
-		
-		log.info("{}: Sent insert request with url: {}.", 
+		log.info("{}: Started insert on {}. Starttime: {}",
 				job.getJobIdentifier(),
-				url);
+				job.getDataSetIdentifier(),
+				res.getJobStartTimestamp()
+				);
+		
+		return res;
 	}
 	
-	private boolean dihWorkingClean() {
+	private boolean continuePolling(DihResponse dihRes) {
 		
 		boolean res = true;
+		
+		if( !lastResponse.getJobStartTimestamp().equals(dihRes.getJobStartTimestamp()) ){
+			log.info("{}: Got response from other job, continue polling. Timestamps... mine: {} other: {}",
+					job.getJobIdentifier(),
+					lastResponse.getJobStartTimestamp(),
+					dihRes.getJobStartTimestamp()
+					);
+			
+			return true;
+		}	
+		
 		
 		if (dihTimedOut) {
 			res = false;
 		}
-		else if(lastResponse.isDihIdle()) {
+		else if(dihRes.isDihIdle()) {
 			res = false;
 		}
-		else if(lastResponse.getDocs_skipped() > 0) {
+		else if(dihRes.getDocs_skipped() > 0) {
 			res = false;
 		}
+		else { //polling
+			log.info("{}: Indexing... Processed {} documents.", job.getJobIdentifier(), dihRes.getDocs_processed());
+		}
+		
+		lastResponse = dihRes;
 	
 		return res;
-	}
-	
-	private void queryDihState() {
-		
-		this.lastResponse = queryJobState();
-
-		if (!lastResponse.isDihIdle()) {
-			log.info("{}: Indexing... Processed {} documents.", job.getJobIdentifier(), lastResponse.getDocs_processed());
-		}
 	}
 	
 	private void tryAbortImport() {				
@@ -116,9 +150,9 @@ public class DataImportSuperviser {
 		for(int i=0; i<3; i++) {
 			sendImportAbort();			
 			Util.sleep(100);
-			dihResponse = queryJobState();
+			dihResponse = callDih(new String[] {"command", "status"});
 			
-			if(DihResponse.STATUS_IDLE.equals(dihResponse.getStatus()))
+			if(dihResponse.isDihIdle())
 				break;
 			
 			log.info("{}: Tried {} time(s) to abort job - not successful yet", job.getJobIdentifier(), i+1);
@@ -126,7 +160,7 @@ public class DataImportSuperviser {
 			Util.sleep(3000);
 		}
 		
-		if( !(DihResponse.STATUS_IDLE.equals(dihResponse.getStatus())) ) {
+		if( !dihResponse.isDihIdle() ) {
 			
 			String exclamation = "******************************************************************************************";			
 			String msg = MessageFormat.format(
@@ -155,28 +189,6 @@ public class DataImportSuperviser {
 		if(res == null) {
 			String msg = MessageFormat.format(
 					"{0}: Sending abort returned null response. Url: {1}", 
-					job.getJobIdentifier(),
-					url
-					);
-			
-			log.error(msg);
-			throw new RuntimeException(msg);
-		}
-		
-		return res;
-	}
-	
-	private DihResponse queryJobState() {
-		
-		URI url = Util.buildSolrUrl(
-				job.getDihPath(), 
-				new String[] {"command", "status"});
-		
-		DihResponse res = client.getForObject(url, DihResponse.class);
-		
-		if(res == null) {
-			String msg = MessageFormat.format(
-					"{0}: Query of import status returned null. Url: {1}", 
 					job.getJobIdentifier(),
 					url
 					);

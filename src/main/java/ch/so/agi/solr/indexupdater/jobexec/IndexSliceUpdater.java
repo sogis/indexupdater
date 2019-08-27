@@ -108,7 +108,7 @@ public class IndexSliceUpdater {
 		deleteAllDocsInFacet();
 		assertAfterDeleteCount();
 		
-		DataImportSuperviser importer = new DataImportSuperviser(job);
+		InsertSuperviser importer = new InsertSuperviser(job);
 		importer.execute();
 		
 		JobState endState = importer.determineEndState();		

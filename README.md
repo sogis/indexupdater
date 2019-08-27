@@ -20,7 +20,12 @@ Der Indexupdater besteht aus den folgenden beiden Hauptteilen:
 
 ## Installation
 
-Der Indexupdater wird als Docker-Image bereitgestellt: https://hub.docker.com/r/sogis/indexupdater. Der im Docker Image genutzte Webserver startet auf Port 8080. 
+Der Indexupdater wird als Docker-Image bereitgestellt: https://hub.docker.com/r/sogis/indexupdater. Der im Docker Image genutzte Webserver startet auf Port 8080.
+
+**Zu beachten:** 
+* Der Indexupdater ist nicht geeignet für den Parallelbetrieb in mehreren Containern, da der State des Indexupdaters im Arbeitspeicher des Containers gehalten wird.
+* SolrCloud: Der Indexupdater ist darauf angewiesen, dass die Requests immer vom leader oder derselben replica verarbeitet werden. Aufgrund des Load-Balancing werden sonst die DIH-Insert- und DIH-Status-Befehle zufällig und nicht interpretierbar an leader und replica verteilt. 
+  
 
 Die Konfiguration erfolgt über die Umgebungsvariable SPRING\_APPLICATION\_JSON. Parameter:
 * solrProtocol: http oder https
