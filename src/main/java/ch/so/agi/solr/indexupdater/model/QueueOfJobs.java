@@ -1,6 +1,7 @@
 package ch.so.agi.solr.indexupdater.model;
 
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -15,13 +16,16 @@ public class QueueOfJobs {
 	private static Queue<Job> pendingJobs = new LinkedList<Job>();
 	private static Job working_Placeholder = null; // This is only a sibling with same identity-information. Due to thread safety, the real working job is only accessed from the thread of the background worker
 	private static Queue<Job> endedJobs = new LinkedList<Job>();
+
 	
-	
-	public static synchronized void add(Job job) {
-		if(job == null)
-			throw new RuntimeException("Method argument [job] must not be null");
+	public static synchronized void addAll(Collection<Job> jobs) {
+		
+		for(Job job:jobs) {
+			if(job == null)
+				throw new RuntimeException("Method argument [job] must not be null");
 			
-		pendingJobs.add(job);
+			pendingJobs.add(job);
+		}
 	}
 	
 	public static synchronized String queryJobState(String jobIdent) {

@@ -33,6 +33,7 @@ public class Controller {
     		@RequestParam(value="timeout", required=false) Integer timeoutSeconds){
     	
     	
+    	ArrayList<Job> jobs = new ArrayList<>();
     	ArrayList<String> ids = new ArrayList<>();
     	
     	for (String ds : datasets) {
@@ -46,9 +47,11 @@ public class Controller {
         			timeoutSeconds
         			);
         	
-        	QueueOfJobs.add(j);
-        	ids.add(j.getJobIdentifier());
+        	jobs.add(j);
+        	ids.add(jobId);
     	}
+    	
+    	QueueOfJobs.addAll(jobs);
     	
     	
     	String jsonArray = null;

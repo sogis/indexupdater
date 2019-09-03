@@ -105,6 +105,9 @@ public class IndexSliceUpdater {
 	}
 	
 	public void execute() {
+		
+		log.info("{}: STARTED", job.getJobIdentifier());
+		
 		deleteAllDocsInFacet();
 		assertAfterDeleteCount();
 		
@@ -113,6 +116,8 @@ public class IndexSliceUpdater {
 		
 		JobState endState = importer.determineEndState();		
 		job.setEndState(endState);
+		
+		log.info("{}: ENDED", job.getJobIdentifier());
 	}
 	
 	private void assertAfterDeleteCount() {

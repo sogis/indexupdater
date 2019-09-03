@@ -35,7 +35,7 @@ Die Konfiguration erfolgt über die Umgebungsvariable SPRING\_APPLICATION\_JSON.
 * solrPathUpdate: Der Pfad, auf welchem "updates" an den entsprechenden Index, resp. die Collection geschickt werden kann.
 * logSilenceMaxDurationSeconds: Definiert, wie lange bei Inaktivität vom Backgroundworker kein Logeintrag geschrieben wird.
 * dihPollIntervalSeconds: Bestimmt, in welchem Abstand bei einem laufenden DIH-Import eines Statusaktualisierung von Solr angefordert wird.
-* dihImportMaxDurationSeconds: Timeout, nach welchem Solr angewiesen wird, einen laufenden Import abzubrechen.
+* dihImportMaxDurationSeconds: Timeout, nach welchem Solr angewiesen wird, den Import eines Dataset abzubrechen.
 * dihDefaultPath: Pfad zum Default-Importhandler. Parameter wird verwendet, sofern beim API-Aufruf der Importhandler nicht gesetzt ist.
 
 Beispielkonfiguration:
