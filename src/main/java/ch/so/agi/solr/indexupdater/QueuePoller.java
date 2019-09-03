@@ -43,6 +43,7 @@ public class QueuePoller {
     		return;
     	}
 
+    	log.info("{}: STARTED", working.getJobIdentifier());
     	logInfo(MessageFormat.format("{0}: Starting indexing. Queue state: {1}", working, QueueOfJobs.asString()));
     	
     	complementDefaults(working);
@@ -50,6 +51,8 @@ public class QueuePoller {
     	try {
         	IndexSliceUpdater updater = new IndexSliceUpdater(working);
         	updater.execute();
+        	
+        	log.info("{}: ENDED", working.getJobIdentifier());
     	}
     	catch(Exception e) {
     		working.setEndState(JobState.ENDED_EXCEPTION);
