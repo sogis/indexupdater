@@ -31,8 +31,8 @@ Die Konfiguration erfolgt über die Umgebungsvariable SPRING\_APPLICATION\_JSON.
 * solrProtocol: http oder https
 * solrHost: Der Hostname des anzusprechenden Solr-Servers
 * solrPort: Der Port des anzusprechenden Solr-Servers
-* solrPathQuery: Der Pfad, auf welchem "selects" an den entsprechenden Index, resp. die Collection geschickt werden kann.
-* solrPathUpdate: Der Pfad, auf welchem "updates" an den entsprechenden Index, resp. die Collection geschickt werden kann.
+* solrPathQuery: Der Pfad, auf welchem die "select count" an den entsprechenden Index geschickt werden.
+* solrPathUpdate: Der Pfad, auf welchem "updates" an den entsprechenden Index, resp. die Collection geschickt werden kann. Update wird verwendet, um den entsprechenden Teil des Index vor dem Insert zu löschen.
 * logSilenceMaxDurationSeconds: Definiert, wie lange bei Inaktivität vom Backgroundworker kein Logeintrag geschrieben wird.
 * dihPollIntervalSeconds: Bestimmt, in welchem Abstand bei einem laufenden DIH-Import eines Statusaktualisierung von Solr angefordert wird.
 * dihImportMaxDurationSeconds: Timeout, nach welchem Solr angewiesen wird, den Import eines Dataset abzubrechen.
@@ -119,6 +119,12 @@ Die Job-Verarbeitung umfasst die folgenden Schritte
 Die Verarbeitung wird von den Klassen des package **ch.so.agi.solr.indexupdater.jobexec** verrichtet. Hauptsächlich durch:
 * **IndexSliceUpdater**: Umfasst den Code für das Update einer entity gemäss den obig beschriebenen Schritten. Siehe IndexSliceUpdater.execute()
 * **DihPoller**: Fragt Solr periodisch nach dem Zustand des laufenden Import-Prozesses. Wird von IndexSliceUpdater aufgerufen.
+
+### UML-Diagramm der Suchservice-Komponenten
+
+![UML Diagramm der Such-Komponenten](doc/search_comp.png)
+
+
 
 
 

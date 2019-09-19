@@ -100,7 +100,18 @@ public class InsertSuperviser {
 		Util.sleep(500);
 		
 		String[] statusParams = new String[] {"command", "status"};
-		DihResponse res = callDih(statusParams);		
+		DihResponse res = callDih(statusParams);	
+		
+		String stamp = res.getJobStartTimestamp();
+		if(stamp == null || stamp.isEmpty()) {
+			String msg = MessageFormat.format(
+					"{0}: Import start failed for dataset {1}. Verify that entity named {2} exists in dih config",
+					job.getJobIdentifier(),
+					job.getDataSetIdentifier(),
+					job.getDsIdentAsEntityName()
+					);
+			throw new RuntimeException(msg);
+		}
 		
 		log.info("{}: Started insert on {}. Starttime: {}",
 				job.getJobIdentifier(),
