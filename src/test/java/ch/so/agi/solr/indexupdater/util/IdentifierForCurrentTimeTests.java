@@ -52,14 +52,17 @@ public class IdentifierForCurrentTimeTests {
 	 */
 	@Test
 	public void reseed_OK() throws InterruptedException {
-		IdentifierForCurrentTime._initializeForTesting(0, 10);
+		IdentifierForCurrentTime._initializeForTesting(1, 10);
 		
 		String id1 = IdentifierForCurrentTime.generate();
-		Thread.sleep(50);
+		Thread.sleep(1100);
 		String id2 = IdentifierForCurrentTime.generate();
+		
+		assertTrue(IdentifierForCurrentTime._inLastSecondReseeded());
 		
 		assertNotEquals(id1, id2);		
 		assertNotNull(id1);
+		assertNotNull(id2);
 	}
 	
 	/*

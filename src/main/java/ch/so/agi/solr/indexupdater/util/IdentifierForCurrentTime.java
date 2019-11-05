@@ -19,7 +19,7 @@ import org.hashids.Hashids;
 public class IdentifierForCurrentTime {
 	
 	private static int MIN_WAIT_MILLIS = 500; //minimum wait period between generate() calls
-	private static int SEED_MAX_DAYS = 7; // maximum time on the same seed
+	private static int SEED_MAX_SECONDS = 7 * 24 * 3600; // maximum time on the same seed
 	
 	private static IdentifierForCurrentTime singleton;
 	private static final Logger log = LoggerFactory.getLogger(IdentifierForCurrentTime.class);
@@ -43,7 +43,7 @@ public class IdentifierForCurrentTime {
 	private String generateInternal() {
 		LocalDateTime now = LocalDateTime.now();
 		
-		if(lastSeed.plusDays(SEED_MAX_DAYS).isBefore(now)) 
+		if(lastSeed.plusSeconds(SEED_MAX_SECONDS).isBefore(now)) 
 			reseed();
 		
 		if(lastGenerate.plus(MIN_WAIT_MILLIS, ChronoUnit.MILLIS).isAfter(now)) {
@@ -74,10 +74,22 @@ public class IdentifierForCurrentTime {
 		return lastSeed.until(now, ChronoUnit.MILLIS);
 	}
 	
-	static void _initializeForTesting(int seedMaxDays, int minWaitMillis) {
-		IdentifierForCurrentTime.SEED_MAX_DAYS = seedMaxDays;
+	static void _initializeForTesting(int seedMaxSeconds, int minWaitMillis) {
+		IdentifierForCurrentTime.SEED_MAX_SECONDS = seedMaxSeconds;
 		IdentifierForCurrentTime.MIN_WAIT_MILLIS = minWaitMillis;
 		
 		IdentifierForCurrentTime.singleton = null;
+	}
+	
+	static boolean _inLastSecondReseeded() {
+		return IdentifierForCurrentTime.singleton._reseedInLastSecond();
+	}
+	
+	boolean _reseedInLastSecond() {
+		LocalDateTime now = LocalDateTime.now();
+		
+		boolean reseedInSecond = now.minusSeconds(1).isBefore(this.lastSeed);
+		
+		return reseedInSecond;
 	}
 }

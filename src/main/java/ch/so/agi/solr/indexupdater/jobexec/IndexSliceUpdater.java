@@ -39,8 +39,6 @@ public class IndexSliceUpdater {
 	public IndexSliceUpdater(Job jobInfo) {
 		this.job = jobInfo;
 		this.mapper = new ObjectMapper();	
-				
-		this.lastDocCount = queryDocCount();
 	}
 	
 	private int queryDocCount() {		
@@ -104,7 +102,8 @@ public class IndexSliceUpdater {
 		return res;
 	}
 	
-	public void execute() {
+	public void execute() {		
+		this.lastDocCount = queryDocCount();
 		
 		deleteAllDocsInFacet();
 		assertAfterDeleteCount();
@@ -119,7 +118,7 @@ public class IndexSliceUpdater {
 	private void assertAfterDeleteCount() {
 		int curCount = queryDocCount();
 		
-		if (this.lastDocCount < 0) {
+		if (this.lastDocCount < 1) {
 			log.warn(
 					"{}: Can not verify delete. Solr had no documents of type {} in index before delete",
 					job.getJobIdentifier(),

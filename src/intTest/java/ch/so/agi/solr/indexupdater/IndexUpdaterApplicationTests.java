@@ -51,7 +51,7 @@ public class IndexUpdaterApplicationTests {
 	@Test
     public void UpdateSlice_WithNoPreviousDocs_OK() {
 		String[] qPara = new String[] {"ds", "ch.so.agi.fill_2k_3k"};
-		
+				
 		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
 		HttpRequest req = HttpRequest.newBuilder(url).build();
 		
