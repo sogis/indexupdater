@@ -22,7 +22,7 @@ public class IdentifierForCurrentTimeTests {
 	 */
 	@Test
 	public void generateWithoutSleep_OK() throws InterruptedException {
-		IdentifierForCurrentTime._initializeForTesting(1, 20);
+		IdentifierForCurrentTime._initializeForTesting(3600, 20);
 		
 		String id1 = IdentifierForCurrentTime.generate();
 		Thread.sleep(50);
@@ -38,7 +38,7 @@ public class IdentifierForCurrentTimeTests {
 	 */
 	@Test
 	public void generateWitSleep_OK() {
-		IdentifierForCurrentTime._initializeForTesting(1, 20);
+		IdentifierForCurrentTime._initializeForTesting(3600, 20);
 		
 		String id1 = IdentifierForCurrentTime.generate();
 		String id2 = IdentifierForCurrentTime.generate();
@@ -73,7 +73,7 @@ public class IdentifierForCurrentTimeTests {
 	public void noDuplicatesWithSameSeed() {
 		
 		HashSet<String> ids = new HashSet<>(1000);
-		IdentifierForCurrentTime._initializeForTesting(1, 2);
+		IdentifierForCurrentTime._initializeForTesting(3600, 2);
 	
 		for (int i=0; i<500; i++) {
 			String id = IdentifierForCurrentTime.generate();
