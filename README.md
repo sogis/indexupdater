@@ -37,6 +37,7 @@ Die Konfiguration erfolgt über die Umgebungsvariable SPRING\_APPLICATION\_JSON.
 * dihPollIntervalSeconds: Bestimmt, in welchem Abstand bei einem laufenden DIH-Import eines Statusaktualisierung von Solr angefordert wird.
 * dihImportMaxDurationSeconds: Timeout, nach welchem Solr angewiesen wird, den Import eines Dataset abzubrechen.
 * dihDefaultPath: Pfad zum Default-Importhandler. Parameter wird verwendet, sofern beim API-Aufruf der Importhandler nicht gesetzt ist.
+* logLevel: Definiert, bis zu welchem Detaillierungs-Level Log-Nachrichten ausgegeben werden. Konfiguraierbare Levels: error, warn, info, debug
 
 Beispielkonfiguration:
 

@@ -30,8 +30,7 @@ public class Controller {
     		@RequestParam(value="ds") String[] datasets,
     		@RequestParam(value="dih", required=false) String dihPath,
     		@RequestParam(value="poll", required=false) Integer pollIntervalSeconds,
-    		@RequestParam(value="timeout", required=false) Integer timeoutSeconds){
-    	
+    		@RequestParam(value="timeout", required=false) Integer timeoutSeconds){    	
     	
     	ArrayList<Job> jobs = new ArrayList<>();
     	ArrayList<String> ids = new ArrayList<>();
@@ -74,7 +73,7 @@ public class Controller {
      * [scheduled]: Job waits in queue to be processed
      * [working]: Job is currently executed
      * [finished]: Job finished working. With ending 
-     * succesful or with error. 
+     * successful or with error. 
      */
     @RequestMapping("/status")
     public String returnAppStatus(){
@@ -82,12 +81,12 @@ public class Controller {
     } 
     
     /*
-     * Returns the state of all known jobs.
+     * Returns the state of the given job.
      * Known jobs can be in one of the following states:
      * [scheduled]: Job waits in queue to be processed
      * [working]: Job is currently executed
      * [finished]: Job finished working. With ending 
-     * succesful or with error. 
+     * successful or with error. 
      */
     @RequestMapping("/status/{ident}")
     public String returnJobStatus(@PathVariable("ident") String ident){

@@ -5,6 +5,10 @@ import java.text.MessageFormat;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+
 @Configuration
 @ConfigurationProperties()
 public class Settings {
@@ -20,6 +24,7 @@ public class Settings {
 	private String solrPathUpdate;
 	
 	private int logSilenceMaxDurationSeconds;
+	private String logLevel;
 	
 	private int dihPollIntervalSeconds;
 	private int dihImportMaxDurationSeconds;
@@ -44,7 +49,8 @@ public class Settings {
 				solrHost,
 				dihDefaultPath,
 				solrPathQuery,
-				solrPathUpdate
+				solrPathUpdate,
+				logLevel
 				};
 		
 		for(String setting : stringSettings) {
@@ -90,11 +96,12 @@ public class Settings {
 		
 		String defaults = MessageFormat.format(
 				"Default settings (DIH path: {0}, Poll interval [s]: {1}, Max. import duration [s]: {2}"
-				+ ", Max silence duration on log [s]: {3})", 
+				+ ", Max silence duration on log [s]: {3}, Log level: {4})", 
 				dihDefaultPath,
 				dihPollIntervalSeconds,
 				dihImportMaxDurationSeconds,
-				logSilenceMaxDurationSeconds
+				logSilenceMaxDurationSeconds,
+				logLevel
 				);
 		
 		String repr = MessageFormat.format("{0}. {1}", hostAdr, defaults);
@@ -148,6 +155,19 @@ public class Settings {
 
 	public void setLogSilenceMaxDurationSeconds(int logSilenceMaxDurationSeconds) {
 		this.logSilenceMaxDurationSeconds = logSilenceMaxDurationSeconds;
+	}
+	
+	public void setLogLevel(String logLevel) {
+		//Logger root = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+		
+		Logger agi_root = (Logger)LoggerFactory.getLogger("ch.so.agi");
+		
+		agi_root.setLevel(Level.toLevel(logLevel));
+		this.logLevel = logLevel;
+	}
+	
+	public String getLogLevel() {
+		return logLevel;
 	}
 
 	public int getDihPollIntervalSeconds() {
