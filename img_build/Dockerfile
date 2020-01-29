@@ -12,4 +12,4 @@ RUN cd /home/indexupdater && \
 
 USER 1001
 EXPOSE 8080
-CMD java -jar indexupdater.jar 
+CMD java -XX:MaxRAMPercentage=80.0 -jar indexupdater.jar
