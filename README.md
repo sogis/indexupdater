@@ -59,6 +59,12 @@ Beispiel-Aufruf:
 http://localhost:8080/queue?ds=ch.so.agi.fill_10k_60k,ch.so.agi.fill&timeout=3
 ```
 
+Beispiel Aufruf mit curl:
+
+```
+curl -i --max-time 20 http://indexupdater-production.dev.so.ch/queue?ds=ch.so.agi.av.nomenklatur.gelaendenamen
+```
+
 #### Zwingende Parameter
 * ds: Identifier des/der dataset(s), für welche der Index neu geladen werden soll. Bei der Uebergabe mehrerer Datasets werden diese mit Komma getrennt.
 
