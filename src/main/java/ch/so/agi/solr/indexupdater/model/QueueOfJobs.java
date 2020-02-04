@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import ch.so.agi.solr.indexupdater.util.QueueStatus;
+
 /*
  * Queue containing the jobs waiting for indexing in solr.
  * 
@@ -12,6 +14,8 @@ import java.util.Queue;
  * in order to be sure of thread safe usage of this class.
  */
 public class QueueOfJobs {
+	
+	private static final int MAX_NUM_ENDED_JOBS = 30;
 	
 	private static Queue<Job> pendingJobs = new LinkedList<Job>();
 	private static Job working_Placeholder = null; // This is only a sibling with same identity-information. Due to thread safety, the real working job is only accessed from the thread of the background worker
@@ -68,7 +72,7 @@ public class QueueOfJobs {
 		if(ended != null) {
 			endedJobs.add(ended);
 			
-			if(endedJobs.size() > 20)
+			if(endedJobs.size() > MAX_NUM_ENDED_JOBS)
 				endedJobs.poll();
 		}
 			
@@ -82,20 +86,41 @@ public class QueueOfJobs {
 		return next;
 	}
 	
-	public static synchronized String asString() {
+	public static synchronized QueueStatus status() {
 		
-		String msg = null;
-		if(working_Placeholder != null)
-			msg = MessageFormat.format("Working on job {0}.", working_Placeholder.getJobIdentifier());
-		else
-			msg = "Not working on a job.";
+		String detailMessage = "";
+		int numPending = 0;
+		String workingIdent = null;
+		int numFinishedOK = 0;
+		int numFinishedError = 0;
 		
-		if(pendingJobs.size() > 0)
-			msg += MessageFormat.format(" Pending: {0}", pendingJobs);
+		if(working_Placeholder != null) {
+			workingIdent = working_Placeholder.getJobIdentifier();
+		}
 		
+		numPending = pendingJobs.size();
+		if(numPending > 0)
+			detailMessage += MessageFormat.format(" Pending: {0}", pendingJobs);
+				
 		if(endedJobs.size() > 0)
-			msg += MessageFormat.format(" Latest ended Jobs: {0}", endedJobs);
+			detailMessage += MessageFormat.format(" Latest ended Jobs: {0}", endedJobs);
 		
-		return msg;
+		for (Job job : endedJobs) {
+			if(job.getEndState() == JobState.ENDED_OK)
+				numFinishedOK++;
+			else
+				numFinishedError++;
+		}
+		
+		if (detailMessage.length() == 0)
+			detailMessage = null;
+		
+		return new QueueStatus(
+				numPending,
+				workingIdent,
+				numFinishedOK,
+				numFinishedError,
+				detailMessage
+				);
 	}
 }

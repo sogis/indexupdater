@@ -44,7 +44,7 @@ public class QueuePoller {
     	}
 
     	log.info("{}: STARTED", working.getJobIdentifier());
-    	logInfo(MessageFormat.format("{0}: Starting indexing. Queue state: {1}", working, QueueOfJobs.asString()));
+    	logInfo(MessageFormat.format("{0}: Starting indexing. Queue state: {1}", working, QueueOfJobs.status().toString()));
     	
     	complementDefaults(working);
     	

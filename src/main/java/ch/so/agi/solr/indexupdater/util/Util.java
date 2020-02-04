@@ -42,6 +42,10 @@ public class Util {
 		}
 	}
 	
+	public static URI buildUrl(BaseAddress adr, String path) {		
+		return buildUrl(adr, path, null, null);
+	}	
+	
 	public static URI buildUrl(BaseAddress adr, String path, Object id) {		
 		return buildUrl(adr, path, id, null);
 	}	
@@ -78,6 +82,25 @@ public class Util {
 		}
 		
 		return builder.build().toUri();
+	}
+	
+	public static HttpResponse<String> sendBare(HttpRequest req){
+		HttpResponse<String> resp;
+		
+		try {
+			resp = client.send(req, BodyHandlers.ofString());
+		}
+		catch(Exception e) {
+			String msg = MessageFormat.format(
+					"Exception occured when sending http request. {0}", 
+					e.getMessage()
+					);
+			
+			log.error(msg);
+			throw new RuntimeException(msg, e);
+		}
+		
+		return resp;
 	}
 	
 	public static HttpResponse<String> sendBare(HttpRequest req, String jobIdent){

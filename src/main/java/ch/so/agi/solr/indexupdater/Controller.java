@@ -5,6 +5,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import ch.so.agi.solr.indexupdater.model.Job;
 import ch.so.agi.solr.indexupdater.model.QueueOfJobs;
 import ch.so.agi.solr.indexupdater.util.IdentifierForCurrentTime;
+import ch.so.agi.solr.indexupdater.util.QueueStatus;
 
 
 @RestController
@@ -76,8 +78,18 @@ public class Controller {
      * successful or with error. 
      */
     @RequestMapping("/status")
-    public String returnAppStatus(){
-    	return QueueOfJobs.asString();
+    public ResponseEntity<String> returnAppStatus(){
+    	ResponseEntity<String> res = null;
+    	
+    	QueueStatus stat = QueueOfJobs.status();
+    	
+    	HttpStatus code = HttpStatus.OK;
+    	if(stat.getNumFinishedError() > 0)
+    		code = HttpStatus.INTERNAL_SERVER_ERROR;
+    	
+    	res = new ResponseEntity<String>(stat.toString(), code);
+    	
+    	return res;
     } 
     
     /*

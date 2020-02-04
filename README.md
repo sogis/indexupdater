@@ -84,6 +84,10 @@ Json-Array der Identifier der erstellten Jobs.
 
 Gibt eine menschenlesbare Antwort zum Status des ganzen Indexupdaters zurück.
 
+Zurückgegebener HTTP Status Code:
+* 200 - Falls alle abgearbeiteten Jobs erfolgreich abgeschlossen haben
+* 500 - Falls ein oder mehrere Jobs mit Fehler abgeschlossen haben
+
 ### Pfad /status/{job identifier}
 
 Gibt eine maschinen- und menschenlesbare Antwort zum Status des angefragten Jobs zurück.

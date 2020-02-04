@@ -3,9 +3,11 @@ package ch.so.agi.solr.indexupdater;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,6 +122,22 @@ public class IndexUpdaterApplicationTests {
 	}
 	
 	@Test
+	public void StatusHttp500_WhenHavingJobException() {
+		String[] qPara = new String[] {"ds", "ch.so.agi.fill_faulty"};
+		
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_QUEUE, qPara);
+		HttpRequest req = HttpRequest.newBuilder(url).build();
+		
+		String jobIdent =  Util.sendBare(req, null).body();
+		String[] arr = jsonToArray(jobIdent);
+		
+		pollForEndState(arr[0], JobState.ENDED_EXCEPTION);
+		
+		int httpStat = queryServerStatus();
+		Assert.assertEquals("/status endpoint must return http code 500", httpStat, 500);
+	}
+	
+	@Test
 	public void JobChain_SuccesAfterError_OK() throws JsonParseException, JsonMappingException, IOException {
 		String[] qPara = new String[] {"ds", "gugus,ch.so.agi.fill_0_1k"};
 		
@@ -199,5 +217,18 @@ public class IndexUpdaterApplicationTests {
 			}
 		}
 		return isEndState;
+	}
+	
+	private static int queryServerStatus() {
+		HttpResponse<String>  res = null;
+			
+		URI url = Util.buildUrl(ADDRESS_IDX_UPDATER, PATH_STATUS);
+		HttpRequest req = HttpRequest.newBuilder(url).build();
+			
+		res = Util.sendBare(req);	
+			
+		log.info("Response status: {}. Body: {}", res.statusCode(), res.body());
+			
+		return res.statusCode();
 	}
 }
