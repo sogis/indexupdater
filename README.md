@@ -131,10 +131,6 @@ Die Verarbeitung wird von den Klassen des package **ch.so.agi.solr.indexupdater.
 * **IndexSliceUpdater**: Umfasst den Code für das Update einer entity gemäss den obig beschriebenen Schritten. Siehe IndexSliceUpdater.execute()
 * **DihPoller**: Fragt Solr periodisch nach dem Zustand des laufenden Import-Prozesses. Wird von IndexSliceUpdater aufgerufen.
 
-### UML-Diagramm der Suchservice-Komponenten
-
-![UML Diagramm der Such-Komponenten](doc/search_comp.png)
-
 
 
 
