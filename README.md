@@ -1,10 +1,7 @@
 # INDEXUPDATER
 
-Http service coordinating entity based index reloading for solr. For an entity, it first deletes all documents of this entity, and then reloads them from source using the solr DataImportHandler (DIH).
-
-Indexupdater has two main parts:
-* "JobInput": Receives http job requests and puts them in a queue.
-* "Backgroundworker": Takes the oldest job from the queue and performs the index update for the entity
+Http service coordinating partial index reloading for solr. For an object-group, it first deletes all documents of this group, 
+and then reloads them from source using the solr DataImportHandler (DIH).
 
 Further documentation in german...
 
@@ -12,13 +9,34 @@ Further documentation in german...
 
 Uebersetzung der obenstehenden einleitenden englischen Kapitels:
 
-Der Indexupdater ist ein http-Service, welcher das neu Laden aller Dokumente einer "entity" koordiniert. Zuerst werden alle Dokumente einer entity gelöscht. Anschliessend werden die Dokumente mittels DataImportHandler (DIH) neu geladen. 
+Der Indexupdater ist ein http-Service, welcher das partielle neu Laden eines zusammengesetzten Indexes koordiniert. 
+Für eine neu zu ladenede Dokumentgruppe werden zuerst alle Dokumente aus dem Index gelöscht. 
+Anschliessend werden die Dokumente mittels DataImportHandler (DIH) neu geladen. 
 
-Der Indexupdater besteht aus den folgenden beiden Hauptteilen:
-* "JobInput": Empfängt die http Job requests und legt die neuen jobs in eine Queue.
-* "Backgroundworker": Nimmt den jeweils ältesten Job aus der Queue und führt die Indexaktualisierung aus.
+## Funktionsweise und genutzte API's
 
-## Installation
+![overview.png](doc/overview.png)
+
+Der Indexupdater musste erstellt werden, da die im Solr-DIH vorhandenen "Bordmittel" für die Pflege des Indexes
+der GDI-SO nicht ausreichen. Mittels Solr-DIH kann nicht ein Teil des Indexes sauber aktualisiert werden.
+
+Funktionsweise des Indexupdater am Beispiel der Gemeinden des Kt. Solothurn (ch.so.agi.gemeindegrenzen)
+1. Mittels Solr-Update-API werden alle Gemeinde-Objekte aus dem Index gelöscht
+1. Mittels DIH werden anschliessend alle Gemeinde-Objekte aus dem Quelldatensatz neu geladen. Mit der entsprechenden 
+"Solr-View" werden die Gemeindedaten in die vom Index benötigte Struktur umgewandelt.
+1. Mit dem Solr-Query-API wird sichergestellt, dass die Gemeinden korrekt wieder in den Index aufgenommen wurden.   
+
+### Job-Queue
+
+Damit die GRETL-Jobs nicht auf die Indexaktualisierung warten müssen, geben sie dem Indexupdater ein Aktualisierungs-Job,
+welcher innerhalb des Indexupdaters in einer Queue abgespeichert wird.
+Ein Background-Job prüft regelmässig, ob sich Aktualisierungs-Jobs in der Queue befinden, und arbeitet diese ab.
+
+Hinweis: Die Queue ist nicht persistiert. Wenn das Pod des Indexupdaters "stirbt", können Aktualisierungs-Job's
+verloren gehen. Ggf. müssen die im log vor dem Tod ausgegebenen pendenten Jobs nach dem Neustart des Pods manuell
+neu beauftragt werden.
+
+## Konfigurieren und Starten
 
 Der Indexupdater wird als Docker-Image bereitgestellt: https://hub.docker.com/r/sogis/indexupdater. Der im Docker Image genutzte Webserver startet auf Port 8080.
 
@@ -26,7 +44,6 @@ Der Indexupdater wird als Docker-Image bereitgestellt: https://hub.docker.com/r/
 * Der Indexupdater ist nicht geeignet für den Parallelbetrieb in mehreren Containern, da der State des Indexupdaters im Arbeitspeicher des Containers gehalten wird.
 * SolrCloud: Der Indexupdater ist darauf angewiesen, dass die Requests immer vom leader oder derselben replica verarbeitet werden. Aufgrund des Load-Balancing werden sonst die DIH-Insert- und DIH-Status-Befehle zufällig und nicht interpretierbar an leader und replica verteilt. 
   
-
 Die Konfiguration erfolgt über die Umgebungsvariable SPRING\_APPLICATION\_JSON. Parameter:
 * solrProtocol: http oder https
 * solrHost: Der Hostname des anzusprechenden Solr-Servers

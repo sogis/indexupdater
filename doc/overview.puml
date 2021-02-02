@@ -1,0 +1,50 @@
+@startuml
+database "Config-DB" {
+  [View *_solr_v] as config_v
+}
+
+database "Geodata" {
+  [View *_solr_v] as data_v
+}
+
+package "Solr" {
+  together {
+  [DIH - Data Import Handler] as dih
+  () HTTP as dihi
+  dihi - dih
+  }
+
+  () . as h1
+
+  dih --> h1
+  h1 --> config_v : jdbc
+  h1 --> data_v : jdbc
+
+  together {
+  [Update] as uh
+  () HTTP as uhi
+  uhi - uh
+  }
+
+  together {
+  () HTTP as qi
+  [Query] as q
+  qi - q
+  }
+
+  database {
+  [SOLR-Index] as si
+  }
+  dih --> si
+  uh --> si
+  q --> si
+}
+
+
+[Indexupdater] as iu
+() HTTP as iui
+iui - iu
+iu --> uhi
+iu --> dihi
+iu --> qi
+@enduml
