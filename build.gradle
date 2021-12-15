@@ -84,7 +84,7 @@ task buildImage(type:Exec, dependsOn: copyJar) {
 }
 
 task pushImg(type:Exec) {
-    commandLine 'docker', 'image', 'push', '--all-tags', "sogis/simi"
+    commandLine 'docker', 'image', 'push', '--all-tags', "sogis/indexupdater"
 }
 
 task stopContainer(type:Exec) {
