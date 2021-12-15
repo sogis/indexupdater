@@ -67,27 +67,24 @@ task startEnv(){
 
 task buildImage(type:Exec, dependsOn: copyJar) {
 	def githash = getCheckedOutGitCommitHash()
-	def buildident = getTravisBuildNumber()
 	def build_timestamp = getTimestamp()
-
+	def version = getVersion(true)
+  def shortVersion = getVersion(false)
 
  	workingDir "$projectDir/img_build"
  	commandLine 'docker', 'build',
 				'--no-cache', '--force-rm',
-				'-t', "sogis/indexupdater:$buildident",
+				'-t', "sogis/indexupdater:$version",
+				'-t', "sogis/indexupdater:$shortVersion",
+				'-t', "sogis/indexupdater:latest",
 				'--label', "indexupdater.created=$build_timestamp", 
 				'--label', "indexupdater.git_commit=$githash",
-				'--label', "indexupdater.travis_build=$buildident",
+        '--label', "indexupdater.version=$version",
 				'-f', 'Dockerfile',  '.'
 }
 
-
-task tagImage(type:Exec, dependsOn: buildImage) {
-	def buildident = getTravisBuildNumber()
-	
- 	commandLine 'docker', 'tag', 
-				"sogis/indexupdater:$buildident",
-				"sogis/indexupdater:latest"
+task pushImg(type:Exec) {
+    commandLine 'docker', 'image', 'push', '--all-tags', "sogis/simi"
 }
 
 task stopContainer(type:Exec) {
@@ -100,7 +97,7 @@ task runImage(type:Exec){
  	commandLine './run_image.sh', 'bg'
  	
  	dependsOn stopContainer
- 	dependsOn tagImage
+ 	dependsOn buildImage
  	dependsOn startEnv
  	
  	doLast { 	
@@ -124,13 +121,22 @@ task testImage(){
 	dependsOn intTest	
 }
 
-String getTravisBuildNumber() {
-	String val = System.getenv('TRAVIS_BUILD_NUMBER')
-	
-	if(val == null)
-		val = 'localbuild'
-		
-	return val
+String getVersion(boolean useFullVersion){
+    String version = "1.0"   
+
+    if(useFullVersion)
+        version = version + "." + getBuildNumber()
+
+    return version
+}
+
+String getBuildNumber() {
+    String val = System.getenv('GITHUB_RUN_NUMBER')
+
+    if(val == null)
+        val = 'localbuild'
+
+    return val
 }
 
 def getCheckedOutGitCommitHash() {
